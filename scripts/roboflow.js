@@ -20,8 +20,9 @@ class RoboflowAPI {
                 }
                 this.cache.delete(cacheKey);
             }
-
-            const response = await fetch(`https://serverless.roboflow.com/infer/workflows/${this.workspaceName}/${this.workflowId}`, {
+            //const url = `https://serverless.roboflow.com/infer/workflows/${this.workspaceName}/${this.workflowId}`;
+            const url = `http://localhost:9001/infer/workflows/${this.workspaceName}/${this.workflowId}`;
+            const response = await fetch(url, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json'

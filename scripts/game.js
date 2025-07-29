@@ -140,7 +140,7 @@ class PoseMatchingGame {
         this.gameState.phase = 'idle';
         
         if (this.gameLoop) {
-            clearInterval(this.gameLoop);
+            clearTimeout(this.gameLoop);
             this.gameLoop = null;
         }
         
@@ -158,7 +158,7 @@ class PoseMatchingGame {
         this.gameState.phase = 'results';
         
         if (this.gameLoop) {
-            clearInterval(this.gameLoop);
+            clearTimeout(this.gameLoop);
             this.gameLoop = null;
         }
         
@@ -187,8 +187,17 @@ class PoseMatchingGame {
     }
 
     startGameLoop() {
-        this.gameLoop = setInterval(() => {
-            this.processFrame();
+        this.scheduleNextFrame();
+    }
+
+    scheduleNextFrame() {
+        this.gameLoop = setTimeout(async () => {
+            await this.processFrame();
+            
+            // Schedule next frame only if game is still running
+            if (this.gameState.isPlaying && this.gameState.phase === 'matching') {
+                this.scheduleNextFrame();
+            }
         }, this.processInterval);
     }
 
@@ -318,11 +327,11 @@ class PoseMatchingGame {
 }
 
 // Initialize the game when the page loads
-document.addEventListener('DOMContentLoaded', () => {
+document.addEventListener('DOMContentLoaded', async () => {
     const game = new PoseMatchingGame();
     
-    // Set initial target pose
-    game.poses.loadTargetPose('tpose');
+    // Set initial target pose (roboflow instance is already set in constructor)
+    await game.poses.loadTargetPose('tpose');
     
     console.log('Visionary2 Pose Matching Game initialized');
 });
