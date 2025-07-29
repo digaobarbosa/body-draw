@@ -20,7 +20,7 @@ class TargetPoses {
             celebration: {
                 name: 'Arms Up',
                 description: 'Raise both arms up in celebration',
-                image: 'assets/targets/1.webp'
+                image: 'assets/targets/2.png'
             },
             pointing: {
                 name: 'Pointing',

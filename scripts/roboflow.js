@@ -65,8 +65,8 @@ class RoboflowAPI {
                 // Check for keypoints in model_predictions structure
                 if (output.model_predictions && output.model_predictions.predictions) {
                     const prediction = output.model_predictions.predictions;
-                    if (prediction.keypoints) {
-                        return prediction.keypoints.map(kp => ({
+                    if (prediction && prediction[0].keypoints) {
+                        return prediction[0].keypoints.map(kp => ({
                             x: kp.x,
                             y: kp.y,
                             confidence: kp.confidence || 1.0,
