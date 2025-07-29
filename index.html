@@ -19,21 +19,15 @@
                 <canvas id="targetCanvas" width="300" height="300"></canvas>
             </div>
 
-            <div class="camera-detection-area">
-                <div class="camera-section">
-                    <h3>Live Camera</h3>
-                    <video id="webcam" width="400" height="300" autoplay muted></video>
-                </div>
-
-                <div class="visualization-section">
-                    <h3>Pose Detection</h3>
-                    <canvas id="visualizationCanvas" width="400" height="300"></canvas>
-                </div>
+            <div class="camera-section">
+                <h3>Live Camera</h3>
+                <video id="webcam" width="400" height="300" autoplay muted></video>
+                <canvas id="resultCanvas" width="400" height="300" style="display:none;"></canvas>
             </div>
 
             <div class="score-section">
                 <h3>Score & Timer</h3>
-                <div id="gameTimer">30</div>
+                <div id="gameTimer">7</div>
                 <div id="score">0</div>
                 <div id="accuracy">0%</div>
             </div>

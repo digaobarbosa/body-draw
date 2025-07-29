@@ -2,8 +2,8 @@ class TargetPoses {
     constructor() {
         this.canvas = document.getElementById('targetCanvas');
         this.ctx = this.canvas.getContext('2d');
-        this.visualizationCanvas = document.getElementById('visualizationCanvas');
-        this.visualizationCtx = this.visualizationCanvas.getContext('2d');
+        this.resultCanvas = document.getElementById('resultCanvas');
+        this.resultCtx = this.resultCanvas.getContext('2d');
         
         this.currentPose = 'tpose';
         this.targetKeypoints = [];
@@ -62,7 +62,7 @@ class TargetPoses {
         try {
             // Clear canvases
             this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
-            this.visualizationCtx.clearRect(0, 0, this.visualizationCanvas.width, this.visualizationCanvas.height);
+            this.resultCtx.clearRect(0, 0, this.resultCanvas.width, this.resultCanvas.height);
 
             // Load and display the target image
             const imageLoaded = await this.loadAndDisplayImage(pose.image);
@@ -199,11 +199,31 @@ class TargetPoses {
 
         const img = new Image();
         img.onload = () => {
-            // Display on the visualization canvas (for player pose detection)
-            this.displayImageOnCanvas(img, this.visualizationCtx, this.visualizationCanvas);
+            // Display on the result canvas
+            this.displayImageOnCanvas(img, this.resultCtx, this.resultCanvas);
+            
+            // Hide video and show result canvas
+            const video = document.getElementById('webcam');
+            const resultCanvas = document.getElementById('resultCanvas');
+            if (video && resultCanvas) {
+                video.style.display = 'none';
+                resultCanvas.style.display = 'block';
+            }
         };
         
         img.src = `data:image/jpeg;base64,${base64Image}`;
+    }
+
+    clearVisualization() {
+        this.resultCtx.clearRect(0, 0, this.resultCanvas.width, this.resultCanvas.height);
+        
+        // Show video and hide result canvas
+        const video = document.getElementById('webcam');
+        const resultCanvas = document.getElementById('resultCanvas');
+        if (video && resultCanvas) {
+            video.style.display = 'block';
+            resultCanvas.style.display = 'none';
+        }
     }
 
     getCurrentPose() {

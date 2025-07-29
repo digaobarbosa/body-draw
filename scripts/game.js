@@ -29,10 +29,7 @@ class PoseMatchingGame {
             debugInfo: document.getElementById('debugInfo')
         };
 
-        this.gameLoop = null;
         this.timerInterval = null;
-        this.lastProcessTime = 0;
-        this.processInterval = 200; // Process every 200ms second
 
         // Connect poses with roboflow instance
         this.poses.setRoboflowInstance(this.roboflow);
@@ -115,19 +112,29 @@ class PoseMatchingGame {
 
     startMatchingPhase() {
         this.gameState.phase = 'matching';
-        this.gameState.timeRemaining = 30;
-        this.updateStatus('Match the target pose! You have 30 seconds.');
+        this.gameState.timeRemaining = 7; // Changed to 7 seconds
         
-        this.startGameLoop();
+        // Clear the visualization canvas so player can't see previous attempts
+        this.poses.clearVisualization();
+        
+        this.updateStatus('Strike your pose! Hold it for 7 seconds.');
+        
+        // Hide accuracy during matching phase
+        this.gameState.currentAccuracy = 0;
+        this.gameState.bestAccuracy = 0;
+        
+        // Single-shot capture mode - pose will be captured when timer expires
         this.startTimer();
         this.updateUI();
     }
 
     startTimer() {
-        this.timerInterval = setInterval(() => {
+        this.timerInterval = setInterval(async () => {
             this.gameState.timeRemaining--;
             
             if (this.gameState.timeRemaining <= 0) {
+                // Capture pose BEFORE ending game
+                await this.captureFinalPose();
                 this.endGame();
             }
             
@@ -135,14 +142,51 @@ class PoseMatchingGame {
         }, 1000);
     }
 
+    async captureFinalPose() {
+        try {
+            this.updateStatus('Capturing your pose...');
+            
+            // Capture the current frame
+            const imageData = this.camera.captureFrame();
+            if (!imageData) {
+                this.updateStatus('Failed to capture pose');
+                return;
+            }
+            
+            // Process with Roboflow API
+            const result = await this.roboflow.detectPose(imageData, this.gameState.thickness);
+            const keypoints = this.roboflow.extractKeypoints(result);
+            const visualization = this.roboflow.extractVisualizationImage(result);
+            
+            // Display the visualization
+            if (visualization) {
+                this.poses.displayVisualization(visualization);
+            }
+            
+            if (keypoints.length > 0) {
+                // Calculate final accuracy
+                const accuracy = this.poses.calculatePoseSimilarity(keypoints);
+                this.gameState.currentAccuracy = accuracy;
+                this.gameState.bestAccuracy = accuracy; // Single shot, so current = best
+                
+                this.updateDebugInfo(`Final pose captured! Accuracy: ${accuracy}%`);
+            } else {
+                this.updateDebugInfo('No pose detected in final capture');
+                this.gameState.currentAccuracy = 0;
+                this.gameState.bestAccuracy = 0;
+            }
+            
+        } catch (error) {
+            console.error('Error capturing final pose:', error);
+            this.updateStatus('Failed to evaluate pose');
+            this.gameState.currentAccuracy = 0;
+            this.gameState.bestAccuracy = 0;
+        }
+    }
+
     stopGame() {
         this.gameState.isPlaying = false;
         this.gameState.phase = 'idle';
-        
-        if (this.gameLoop) {
-            clearTimeout(this.gameLoop);
-            this.gameLoop = null;
-        }
         
         if (this.timerInterval) {
             clearInterval(this.timerInterval);
@@ -156,11 +200,6 @@ class PoseMatchingGame {
 
     endGame() {
         this.gameState.phase = 'results';
-        
-        if (this.gameLoop) {
-            clearTimeout(this.gameLoop);
-            this.gameLoop = null;
-        }
         
         if (this.timerInterval) {
             clearInterval(this.timerInterval);
@@ -186,62 +225,7 @@ class PoseMatchingGame {
         }, 5000);
     }
 
-    startGameLoop() {
-        this.scheduleNextFrame();
-    }
 
-    scheduleNextFrame() {
-        this.gameLoop = setTimeout(async () => {
-            await this.processFrame();
-            
-            // Schedule next frame only if game is still running
-            if (this.gameState.isPlaying && this.gameState.phase === 'matching') {
-                this.scheduleNextFrame();
-            }
-        }, this.processInterval);
-    }
-
-    async processFrame() {
-        try {
-            const imageData = this.camera.captureFrame();
-            if (!imageData) {
-                return;
-            }
-            this.updateDebugInfo('Processing frame...');
-
-            
-            const result = await this.roboflow.detectPose(imageData, this.gameState.thickness);
-            const keypoints = this.roboflow.extractKeypoints(result);
-            const visualization = this.roboflow.extractVisualizationImage(result);
-
-            // Display the visualization from API (includes keypoints drawn over original image)
-            if (visualization) {
-                this.poses.displayVisualization(visualization);
-            }
-
-            if (keypoints.length > 0) {
-                // Calculate pose similarity with target
-                const accuracy = this.poses.calculatePoseSimilarity(keypoints);
-                
-                this.gameState.currentAccuracy = accuracy;
-                
-                // Track best accuracy during the game
-                if (accuracy > this.gameState.bestAccuracy) {
-                    this.gameState.bestAccuracy = accuracy;
-                }
-                
-                this.updateDebugInfo(`Keypoints: ${keypoints.length}, Accuracy: ${accuracy}%`);
-            } else {
-                this.updateDebugInfo('No pose detected');
-            }
-
-            this.updateUI();
-
-        } catch (error) {
-            console.error('Error processing frame:', error);
-            this.updateDebugInfo(`Error: ${error.message}`);
-        }
-    }
 
     nextTarget() {
         const currentIndex = Array.from(this.elements.targetSelector.options)
@@ -294,15 +278,22 @@ class PoseMatchingGame {
         
         // Update score and accuracy
         this.elements.score.textContent = Math.round(this.gameState.score);
-        this.elements.accuracy.textContent = `${this.gameState.currentAccuracy}%`;
         
-        // Update accuracy color
-        if (this.gameState.currentAccuracy >= 70) {
-            this.elements.accuracy.style.color = '#4caf50'; // Green
-        } else if (this.gameState.currentAccuracy >= 40) {
-            this.elements.accuracy.style.color = '#ff9800'; // Orange
+        // Hide accuracy during matching phase
+        if (this.gameState.phase === 'matching') {
+            this.elements.accuracy.textContent = 'Posing...';
+            this.elements.accuracy.style.color = '#ffeb3b'; // Yellow
         } else {
-            this.elements.accuracy.style.color = '#f44336'; // Red
+            this.elements.accuracy.textContent = `${this.gameState.currentAccuracy}%`;
+            
+            // Update accuracy color
+            if (this.gameState.currentAccuracy >= 70) {
+                this.elements.accuracy.style.color = '#4caf50'; // Green
+            } else if (this.gameState.currentAccuracy >= 40) {
+                this.elements.accuracy.style.color = '#ff9800'; // Orange
+            } else {
+                this.elements.accuracy.style.color = '#f44336'; // Red
+            }
         }
 
         // Update timer color based on time remaining
