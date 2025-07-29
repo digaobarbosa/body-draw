@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Visionary2 - Pose Drawing Game</title>
+    <link rel="stylesheet" href="styles/main.css">
+</head>
+<body>
+    <div class="game-container">
+        <header>
+            <h1>Visionary2</h1>
+            <p>Match poses with your body!</p>
+        </header>
+
+        <div class="game-area">
+            <div class="target-section">
+                <h3>Target Pose</h3>
+                <canvas id="targetCanvas" width="300" height="300"></canvas>
+            </div>
+
+            <div class="camera-section">
+                <h3>Live Camera</h3>
+                <video id="webcam" width="640" height="480" autoplay muted></video>
+            </div>
+
+            <div class="visualization-section">
+                <h3>Pose Detection</h3>
+                <canvas id="visualizationCanvas" width="300" height="300"></canvas>
+            </div>
+
+            <div class="score-section">
+                <h3>Score & Timer</h3>
+                <div id="gameTimer">30</div>
+                <div id="score">0</div>
+                <div id="accuracy">0%</div>
+            </div>
+        </div>
+
+        <div class="controls">
+            <button id="startGame">Start Game</button>
+            <button id="nextTarget">Next Target</button>
+            <button id="calibrate">Calibrate</button>
+            <select id="targetSelector">
+                <option value="tpose">T-Pose</option>
+                <option value="celebration">Arms Up</option>
+                <option value="pointing">Pointing</option>
+                <option value="sitting">Sitting</option>
+            </select>
+            <label for="thicknessSlider">Thickness: <span id="thicknessValue">10</span></label>
+            <input type="range" id="thicknessSlider" min="5" max="50" value="10">
+        </div>
+
+        <div class="status">
+            <div id="statusMessage">Click "Start Game" to begin</div>
+            <div id="debugInfo"></div>
+        </div>
+    </div>
+
+    <script src="scripts/camera.js"></script>
+    <script src="scripts/roboflow.js"></script>
+    <script src="scripts/poses.js"></script>
+    <script src="scripts/game.js"></script>
+</body>
+</html>

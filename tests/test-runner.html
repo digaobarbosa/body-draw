@@ -1,0 +1,195 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Pose Matching Tests</title>
+    <style>
+        body {
+            font-family: 'Arial', sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        .test-container {
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        h1 {
+            color: #333;
+            text-align: center;
+        }
+        .test-output {
+            background: #1e1e1e;
+            color: #f0f0f0;
+            padding: 20px;
+            border-radius: 5px;
+            font-family: 'Courier New', monospace;
+            font-size: 14px;
+            white-space: pre-wrap;
+            max-height: 400px;
+            overflow-y: auto;
+        }
+        .run-button {
+            background: #4caf50;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 16px;
+            margin-bottom: 20px;
+        }
+        .run-button:hover {
+            background: #45a049;
+        }
+        .description {
+            color: #666;
+            margin-bottom: 20px;
+            line-height: 1.6;
+        }
+    </style>
+</head>
+<body>
+    <div class="test-container">
+        <h1>🧪 Pose Matching Tests</h1>
+        
+        <div class="description">
+            <p>This test suite validates the pose matching functionality for the Visionary2 game. 
+            It tests keypoint similarity calculations, confidence thresholds, and edge cases.</p>
+            
+            <p><strong>Tests include:</strong></p>
+            <ul>
+                <li>Perfect pose matches (should return 100% similarity)</li>
+                <li>Empty keypoint handling</li>
+                <li>Low confidence keypoint filtering</li>
+                <li>Partial keypoint matching</li>
+                <li>Distance-based similarity calculations</li>
+            </ul>
+        </div>
+
+        <button class="run-button" onclick="runTests()">Run Tests</button>
+        
+        <div id="output" class="test-output">Click "Run Tests" to execute the test suite...</div>
+    </div>
+
+    <script src="pose-matching.test.js"></script>
+    <script>
+        // Override console.log to capture output
+        const originalLog = console.log;
+        let testOutput = '';
+        
+        function captureConsole() {
+            console.log = function(...args) {
+                testOutput += args.join(' ') + '\n';
+                originalLog.apply(console, args);
+            };
+        }
+        
+        function restoreConsole() {
+            console.log = originalLog;
+        }
+        
+        function runTests() {
+            const outputDiv = document.getElementById('output');
+            testOutput = '';
+            
+            captureConsole();
+            
+            try {
+                // Create new test instance to avoid state issues
+                const tests = new PoseMatchingTests();
+                
+                // Re-add all tests
+                tests.addTest('Perfect match returns 100% similarity', () => {
+                    const poses = new MockTargetPoses();
+                    poses.targetKeypoints = poses.generateMockKeypoints('tpose');
+                    const playerKeypoints = poses.generateMockKeypoints('tpose');
+                    
+                    const similarity = poses.calculatePoseSimilarity(playerKeypoints);
+                    tests.assertEqual(similarity, 100, 'Perfect match should return 100%');
+                });
+                
+                tests.addTest('Empty keypoints returns 0% similarity', () => {
+                    const poses = new MockTargetPoses();
+                    poses.targetKeypoints = poses.generateMockKeypoints('tpose');
+                    
+                    const similarity = poses.calculatePoseSimilarity([]);
+                    tests.assertEqual(similarity, 0, 'Empty keypoints should return 0%');
+                });
+                
+                tests.addTest('Low confidence keypoints are ignored', () => {
+                    const poses = new MockTargetPoses();
+                    poses.targetKeypoints = poses.generateMockKeypoints('tpose');
+                    
+                    const playerKeypoints = poses.generateMockKeypoints('tpose').map(kp => ({
+                        ...kp,
+                        confidence: 0.3
+                    }));
+                    
+                    const similarity = poses.calculatePoseSimilarity(playerKeypoints);
+                    tests.assertEqual(similarity, 0, 'Low confidence keypoints should be ignored');
+                });
+                
+                tests.addTest('Slightly offset pose has good similarity', () => {
+                    const poses = new MockTargetPoses();
+                    poses.targetKeypoints = poses.generateMockKeypoints('tpose');
+                    
+                    const playerKeypoints = poses.generateMockKeypoints('tpose').map(kp => ({
+                        ...kp,
+                        x: kp.x + 5,
+                        y: kp.y + 5
+                    }));
+                    
+                    const similarity = poses.calculatePoseSimilarity(playerKeypoints);
+                    tests.assertRange(similarity, 80, 99, 'Slightly offset pose should have good similarity');
+                });
+                
+                tests.addTest('Very different pose has low similarity', () => {
+                    const poses = new MockTargetPoses();
+                    poses.targetKeypoints = poses.generateMockKeypoints('tpose');
+                    const playerKeypoints = poses.generateMockKeypoints('celebration');
+                    
+                    const similarity = poses.calculatePoseSimilarity(playerKeypoints);
+                    tests.assertRange(similarity, 0, 50, 'Very different pose should have low similarity');
+                });
+                
+                tests.addTest('Keypoint generation is consistent', () => {
+                    const poses = new MockTargetPoses();
+                    const keypoints1 = poses.generateMockKeypoints('tpose');
+                    const keypoints2 = poses.generateMockKeypoints('tpose');
+                    
+                    tests.assertEqual(keypoints1.length, keypoints2.length, 'Generated keypoints should have same length');
+                    tests.assertEqual(keypoints1.length, 17, 'Should generate 17 keypoints (COCO format)');
+                });
+                
+                const results = tests.runTests();
+                
+                // Add summary styling to output
+                testOutput += '\n' + '='.repeat(50) + '\n';
+                if (results.passed === results.total) {
+                    testOutput += '🎉 ALL TESTS PASSED! 🎉\n';
+                } else {
+                    testOutput += `⚠️  ${results.total - results.passed} test(s) failed\n`;
+                }
+                testOutput += '='.repeat(50);
+                
+            } catch (error) {
+                testOutput += `\n❌ Test execution error: ${error.message}\n`;
+            } finally {
+                restoreConsole();
+                outputDiv.textContent = testOutput;
+            }
+        }
+        
+        // Prevent auto-run in test runner
+        window.addEventListener('load', () => {
+            // Clear any auto-run output
+            document.getElementById('output').textContent = 'Click "Run Tests" to execute the test suite...';
+        });
+    </script>
+</body>
+</html>

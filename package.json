@@ -1,0 +1,16 @@
+{
+  "name": "visionary2",
+  "version": "1.0.0",
+  "description": "A static web game that uses Roboflow's YOLOv8m pose detection to let players \"draw\" target shapes with their body movements using their webcam.",
+  "main": "index.html",
+  "scripts": {
+    "dev": "python3 -m http.server 3000",
+    "build": "echo \"Static site - no build step needed\"",
+    "preview": "python3 -m http.server 8080"
+  },
+  "keywords": ["game", "pose-detection", "roboflow", "yolov8", "webcam", "computer-vision"],
+  "author": "",
+  "license": "MIT",
+  "devDependencies": {},
+  "dependencies": {}
+}
