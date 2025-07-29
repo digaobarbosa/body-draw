@@ -25,7 +25,7 @@ class TargetPoses {
             pointing: {
                 name: 'Pointing',
                 description: 'Point with one arm extended',
-                image: 'assets/targets/1.webp'
+                image: 'assets/targets/3.png'
             },
             sitting: {
                 name: 'Sitting',
@@ -214,7 +214,7 @@ class TargetPoses {
         return this.targetKeypoints;
     }
 
-    // Calculate similarity between player pose and target pose
+    // Calculate similarity between player pose and target pose using enhanced algorithm
     calculatePoseSimilarity(playerKeypoints) {
         // Add detailed logging for debugging pose comparison issues
         if (!playerKeypoints || playerKeypoints.length === 0) {
@@ -228,7 +228,24 @@ class TargetPoses {
         }
         
         console.log(`🔍 Comparing poses: Player=${playerKeypoints.length} vs Target=${this.targetKeypoints.length} keypoints`);
+        console.log("playerKeypoints", playerKeypoints);
+        console.log("targetKeypoints", this.targetKeypoints);
 
+        // Use the enhanced pose comparison algorithm
+        if (typeof PoseComparison !== 'undefined') {
+            const poseComparison = new PoseComparison();
+            const similarity = poseComparison.calculatePoseSimilarity(playerKeypoints, this.targetKeypoints);
+            console.log(`📊 Enhanced pose similarity: ${similarity}%`);
+            return similarity;
+        } else {
+            // Fallback to simple distance-based comparison if PoseComparison is not available
+            console.log('⚠️ PoseComparison not available, using fallback algorithm');
+            return this.calculateSimpleDistanceSimilarity(playerKeypoints);
+        }
+    }
+
+    // Fallback simple distance-based comparison
+    calculateSimpleDistanceSimilarity(playerKeypoints) {
         let totalDistance = 0;
         let validComparisons = 0;
         const maxDistance = 100; // Maximum acceptable distance for full score
@@ -257,7 +274,7 @@ class TargetPoses {
         const averageDistance = totalDistance / validComparisons;
         const similarity = Math.max(0, 100 - (averageDistance / maxDistance) * 100);
         
-        console.log(`📊 Pose similarity: ${Math.round(similarity)}% (${validComparisons} valid comparisons, avg distance: ${averageDistance.toFixed(2)})`);
+        console.log(`📊 Simple pose similarity: ${Math.round(similarity)}% (${validComparisons} valid comparisons, avg distance: ${averageDistance.toFixed(2)})`);
         
         return Math.round(similarity);
     }

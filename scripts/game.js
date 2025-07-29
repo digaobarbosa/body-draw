@@ -7,7 +7,7 @@ class PoseMatchingGame {
         this.gameState = {
             isPlaying: false,
             isPreparing: false,
-            timeRemaining: 30,
+            timeRemaining: 7,
             score: 0,
             currentAccuracy: 0,
             bestAccuracy: 0,
@@ -32,7 +32,7 @@ class PoseMatchingGame {
         this.gameLoop = null;
         this.timerInterval = null;
         this.lastProcessTime = 0;
-        this.processInterval = 1000; // Process every 1 second
+        this.processInterval = 200; // Process every 200ms second
 
         // Connect poses with roboflow instance
         this.poses.setRoboflowInstance(this.roboflow);
@@ -213,7 +213,6 @@ class PoseMatchingGame {
             const result = await this.roboflow.detectPose(imageData, this.gameState.thickness);
             const keypoints = this.roboflow.extractKeypoints(result);
             const visualization = this.roboflow.extractVisualizationImage(result);
-            console.log("processFrame", keypoints,result,visualization);
 
             // Display the visualization from API (includes keypoints drawn over original image)
             if (visualization) {

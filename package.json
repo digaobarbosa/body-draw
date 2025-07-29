@@ -6,11 +6,21 @@
   "scripts": {
     "dev": "python3 -m http.server 3000",
     "build": "echo \"Static site - no build step needed\"",
-    "preview": "python3 -m http.server 8080"
+    "preview": "python3 -m http.server 8080",
+    "test": "jest",
+    "test:watch": "jest --watch"
   },
-  "keywords": ["game", "pose-detection", "roboflow", "yolov8", "webcam", "computer-vision"],
+  "keywords": [
+    "game",
+    "pose-detection",
+    "roboflow",
+    "yolov8",
+    "webcam",
+    "computer-vision"
+  ],
   "author": "",
   "license": "MIT",
-  "devDependencies": {},
-  "dependencies": {}
+  "devDependencies": {
+    "jest": "^30.0.5"
+  }
 }
