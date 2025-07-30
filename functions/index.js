@@ -1,16 +1,11 @@
 const {onRequest} = require("firebase-functions/v2/https");
 const {logger} = require("firebase-functions");
-const {defineString} = require("firebase-functions/params");
-
-// Define the API key parameter
-const roboflowApiKey = defineString("ROBOFLOW_API_KEY", {
-  description: "API key for Roboflow pose detection service",
-});
 
 // The Firebase Cloud Function
 exports.detectPose = onRequest({
   cors: true,
   region: "us-central1",
+  invoker: "public",
 }, async (req, res) => {
   // Only allow POST requests
   if (req.method !== "POST") {
@@ -19,10 +14,10 @@ exports.detectPose = onRequest({
   }
 
   try {
-    // Get the Roboflow API key from parameters
-    const apiKey = roboflowApiKey.value();
+    // Get the Roboflow API key from environment or hardcoded for now
+    const apiKey = process.env.ROBOFLOW_API_KEY || "SLt1HjDiKA4nAQcHml4K";
     if (!apiKey) {
-      logger.error("ROBOFLOW_API_KEY parameter not set");
+      logger.error("ROBOFLOW_API_KEY not available");
       res.status(500).json({error: "Server configuration error"});
       return;
     }

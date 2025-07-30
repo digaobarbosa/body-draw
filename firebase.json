@@ -5,7 +5,6 @@
       "firebase.json",
       "**/.*",
       "**/node_modules/**",
-      "scripts/**",
       "tests/**",
       "jest.config.js",
       "CLAUDE.md",
@@ -14,12 +13,8 @@
     ],
     "rewrites": [
       {
-        "source": "/api/**",
+        "source": "/api/detectPose",
         "function": "detectPose"
-      },
-      {
-        "source": "**",
-        "destination": "/index.html"
       }
     ],
     "headers": [
