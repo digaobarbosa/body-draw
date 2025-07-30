@@ -37,22 +37,38 @@ service cloud.firestore {
       allow read: if true;   // Allow anyone to read room info
       allow update: if true; // Allow room state updates
       allow delete: if false; // Prevent room deletion
-    }
-    
-    // Allow read/write access to players in rooms
-    match /rooms/{roomId}/players/{playerId} {
-      allow create: if true; // Allow anyone to join rooms
-      allow read: if true;   // Allow reading player list
-      allow update: if true; // Allow player state updates
-      allow delete: if true; // Allow players to leave
-    }
-    
-    // Allow read/write access to game results
-    match /rooms/{roomId}/results/{resultId} {
-      allow create: if true; // Allow result submission
-      allow read: if true;   // Allow reading results for leaderboard
-      allow update: if false; // Prevent result updates (immutable)
-      allow delete: if false; // Prevent result deletion
+      
+      // Allow read/write access to players in rooms
+      match /players/{playerId} {
+        allow create: if true; // Allow anyone to join rooms
+        allow read: if true;   // Allow reading player list
+        allow update: if true; // Allow player state updates
+        allow delete: if true; // Allow players to leave
+      }
+      
+      // Allow read/write access to game results (legacy)
+      match /results/{resultId} {
+        allow create: if true; // Allow result submission
+        allow read: if true;   // Allow reading results for leaderboard
+        allow update: if false; // Prevent result updates (immutable)
+        allow delete: if false; // Prevent result deletion
+      }
+      
+      // Allow read/write access to player results (current implementation)
+      match /playerResults/{playerId} {
+        allow create: if true; // Allow result submission
+        allow read: if true;   // Allow reading results for leaderboard
+        allow update: if true; // Allow result updates during game
+        allow delete: if false; // Prevent result deletion
+      }
+      
+      // Allow read/write access to game state
+      match /gameState/{stateId} {
+        allow create: if true; // Allow game state creation
+        allow read: if true;   // Allow reading game state
+        allow update: if true; // Allow game state updates
+        allow delete: if false; // Prevent state deletion
+      }
     }
   }
 }

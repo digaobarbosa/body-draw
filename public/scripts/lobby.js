@@ -11,6 +11,16 @@ class LobbyController {
         this.playerId = null;
         this.username = null;
         
+        // Check for room parameter in URL for admin page
+        if (this.isAdmin) {
+            const urlParams = new URLSearchParams(window.location.search);
+            const roomParam = urlParams.get('room');
+            if (roomParam) {
+                this.roomId = roomParam;
+                this.loadExistingRoom = true;
+            }
+        }
+        
         // Determine page type and initialize accordingly
         if (this.isAdmin) {
             this.initializeAdminPage();
@@ -123,15 +133,101 @@ class LobbyController {
     }
 
     /**
+     * Request camera permission for better game experience
+     */
+    async requestCameraPermission() {
+        try {
+            this.showMessage('Requesting camera access for the game...', false);
+            
+            const stream = await navigator.mediaDevices.getUserMedia({
+                video: {
+                    width: 640,
+                    height: 480,
+                    facingMode: 'user'
+                }
+            });
+            
+            // Stop the stream immediately since we only needed permission
+            stream.getTracks().forEach(track => track.stop());
+            
+            this.hideMessage();
+            this.showMessage('✅ Camera ready! You\'re all set for the game.', true);
+            
+            setTimeout(() => {
+                this.hideMessage();
+            }, 3000);
+            
+        } catch (error) {
+            console.error('Camera permission denied:', error);
+            
+            this.showMessage('⚠️ Camera access denied. You can still join the game, but you\'ll need to allow camera access when the game starts.', true);
+            
+            setTimeout(() => {
+                this.hideMessage();
+            }, 5000);
+        }
+    }
+
+    /**
      * Enable UI controls once multiplayer is ready
      */
     enableUI() {
         if (this.isAdmin) {
-            this.validateRoomName();
+            if (this.loadExistingRoom && this.roomId) {
+                // Load existing room data
+                this.loadRoomData();
+            } else {
+                this.validateRoomName();
+            }
         } else {
             this.validateUsername();
             // Check if room exists
             this.checkRoomExists();
+        }
+    }
+
+    /**
+     * Load existing room data from URL parameter
+     */
+    async loadRoomData() {
+        try {
+            this.showMessage('Connecting to room...', false);
+            
+            // Check if room exists and get room data
+            const roomQuery = this.multiplayer.query(
+                this.multiplayer.collection(this.multiplayer.db, 'rooms'),
+                this.multiplayer.where('roomId', '==', this.roomId)
+            );
+            
+            const roomSnapshot = await this.multiplayer.getDocs(roomQuery);
+            
+            if (!roomSnapshot.empty) {
+                const roomData = roomSnapshot.docs[0].data();
+                
+                // Connect to the existing room as admin
+                this.multiplayer.currentRoom = this.roomId;
+                this.playerId = roomData.hostPlayerId; // Use the original host player ID
+                this.multiplayer.playerId = this.playerId;
+                this.multiplayer.playerNickname = 'Admin';
+                
+                // Show room management interface
+                this.showRoomManagement();
+                this.hideMessage();
+                
+                console.log('Connected to existing room:', this.roomId);
+            } else {
+                // Room doesn't exist, show error
+                this.showMessage('Room not found. Please create a new room.', true);
+                this.createSection.style.display = 'block';
+                this.roomManagement.style.display = 'none';
+                return;
+            }
+            
+        } catch (error) {
+            console.error('Error loading room data:', error);
+            this.showMessage('Error loading room. Please try again.', true);
+            this.createSection.style.display = 'block';
+            this.roomManagement.style.display = 'none';
         }
     }
 
@@ -193,8 +289,10 @@ class LobbyController {
             if (result.success) {
                 this.roomId = result.roomCode;
                 this.playerId = result.playerId;
-                this.showRoomManagement();
                 this.hideMessage();
+                
+                // Redirect to room URL to maintain state
+                window.location.href = `create-room.html?room=${this.roomId}`;
             } else {
                 this.showMessage(`Failed to create room: ${result.error}`, true);
             }
@@ -226,6 +324,9 @@ class LobbyController {
                 
                 this.showLobbyScreen();
                 this.hideMessage();
+                
+                // Request camera permission for better game experience
+                await this.requestCameraPermission();
             } else {
                 this.showMessage(`Failed to join room: ${result.error}`, true);
             }
@@ -264,7 +365,8 @@ class LobbyController {
         if (this.multiplayer && typeof this.multiplayer.listenForRoomChanges === 'function') {
             this.multiplayer.listenForRoomChanges((roomData) => {
                 if (roomData.state === 'playing') {
-                    window.location.href = `index.html?room=${this.roomId}&mode=multiplayer&admin=true`;
+                    // Open game in new tab while keeping admin page open
+                    window.open(`index.html?room=${this.roomId}&mode=multiplayer&admin=true`, '_blank');
                 }
             });
         } else {

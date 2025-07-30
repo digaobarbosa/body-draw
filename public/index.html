@@ -11,9 +11,6 @@
         <header>
             <h1>Body Draw</h1>
             <p>Match poses with your body!</p>
-            <div class="game-modes">
-                <a href="create-room.html" class="multiplayer-link">🎮 Create Multiplayer Room</a>
-            </div>
         </header>
 
         <div class="game-area">
@@ -32,9 +29,11 @@
             </div>
 
             <div class="score-section">
-                <h3>Score & Timer</h3>
-                <div id="gameTimer">7</div>
+                <h3>Taking photo in</h3>
+                <div ><span id="gameTimer">7</span> s</div>
+                <h3>Total Score</h3>
                 <div id="score">0</div>
+                <h3>Avg Accuracy</h3>
                 <div id="accuracy">0%</div>
             </div>
         </div>
@@ -53,6 +52,41 @@
         <div class="status">
             <div id="statusMessage">Click "Start Game" to begin</div>
             <div id="debugInfo"></div>
+        </div>
+
+        <!-- Admin Control Panel (only visible in admin mode) -->
+        <div id="adminPanel" class="admin-panel" style="display: none;">
+            <div class="admin-header">
+                <h3>🎮 Admin Controls</h3>
+                <button id="toggleAdminPanel" class="toggle-btn">▼</button>
+            </div>
+            <div class="admin-content">
+                <div class="player-statuses">
+                    <h4>Player Status</h4>
+                    <div id="adminPlayerList" class="admin-player-list">
+                        <!-- Players will be dynamically added here -->
+                    </div>
+                </div>
+                <div class="admin-controls">
+                    <button id="nextPhaseBtn" class="admin-btn">Next Phase</button>
+                    <button id="endGameBtn" class="admin-btn end-btn">End Game</button>
+                    <button id="backToLobbyBtn" class="admin-btn">Back to Lobby</button>
+                </div>
+                <div class="game-info">
+                    <div>Room: <span id="adminRoomId">room-name</span></div>
+                    <div>Pose: <span id="adminCurrentPose">1</span>/3</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Waiting Screen (for players between poses) -->
+        <div id="waitingScreen" class="waiting-screen" style="display: none;">
+            <div class="waiting-content">
+                <div class="waiting-spinner"></div>
+                <h3>Waiting for next phase...</h3>
+                <p>The admin will start the next pose when ready.</p>
+                <div id="waitingRoomInfo">Room: <span id="waitingRoomId">room-name</span></div>
+            </div>
         </div>
     </div>
 

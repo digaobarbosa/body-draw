@@ -136,10 +136,6 @@ class MultiplayerManager {
                 return { success: false, error: 'Room is full' };
             }
 
-            // Check if game already started
-            if (roomData.state !== 'waiting_start') {
-                return { success: false, error: 'Game already in progress' };
-            }
 
             // Add player to room
             const playerId = this.generatePlayerId();
@@ -275,6 +271,140 @@ class MultiplayerManager {
 
         this.roomListeners.push(unsubscribe);
         return unsubscribe;
+    }
+
+    /**
+     * Update game state (admin only)
+     */
+    async updateGameState(currentPose, phase) {
+        if (!this.currentRoom) {
+            throw new Error('Not in a room');
+        }
+
+        try {
+            const gameStateRef = this.doc(this.db, 'rooms', this.currentRoom, 'gameState', 'current');
+            await this.setDoc(gameStateRef, {
+                currentPose: currentPose,
+                phase: phase, // "playing" or "waiting"
+                lastUpdate: new Date()
+            });
+
+            console.log(`Game state updated: pose ${currentPose}, phase ${phase}`);
+            return { success: true };
+
+        } catch (error) {
+            console.error('Error updating game state:', error);
+            return { success: false, error: error.message };
+        }
+    }
+
+    /**
+     * Listen for game state changes
+     */
+    listenForGameStateChanges(callback) {
+        if (!this.currentRoom) return;
+
+        const gameStateRef = this.doc(this.db, 'rooms', this.currentRoom, 'gameState', 'current');
+        const unsubscribe = this.onSnapshot(gameStateRef, 
+            (doc) => {
+                if (doc.exists()) {
+                    const gameState = doc.data();
+                    callback(gameState);
+                }
+            },
+            (error) => {
+                console.error('Game state listener error:', error);
+            }
+        );
+
+        this.roomListeners.push(unsubscribe);
+        return unsubscribe;
+    }
+
+    /**
+     * Submit player result for current pose
+     */
+    async submitPlayerResult(poseIndex, accuracy, nickname) {
+        if (!this.currentRoom || !this.playerId) {
+            throw new Error('Not in a room');
+        }
+
+        try {
+            const playerResultRef = this.doc(this.db, 'rooms', this.currentRoom, 'playerResults', this.playerId);
+            
+            // Get existing results or create new
+            const existingDoc = await this.getDocs(this.query(
+                this.collection(this.db, 'rooms', this.currentRoom, 'playerResults'),
+                this.where('playerId', '==', this.playerId)
+            ));
+
+            let scores = [];
+            if (!existingDoc.empty) {
+                scores = existingDoc.docs[0].data().scores || [];
+            }
+
+            // Determine player status
+            let status = 'playing';
+            if (poseIndex === -1) {
+                // Special index indicates game completion
+                status = 'done';
+            } else {
+                // Update the score for this pose index
+                scores[poseIndex] = Math.round(accuracy);
+                status = 'waiting'; // waiting for next phase
+            }
+
+            await this.setDoc(playerResultRef, {
+                playerId: this.playerId,
+                nickname: nickname,
+                scores: scores,
+                status: status,
+                lastUpdate: new Date()
+            });
+
+            if (poseIndex === -1) {
+                console.log(`Player marked as done: ${nickname}`);
+            } else {
+                console.log(`Result submitted for pose ${poseIndex}: ${accuracy}%`);
+            }
+            return { success: true };
+
+        } catch (error) {
+            console.error('Error submitting player result:', error);
+            return { success: false, error: error.message };
+        }
+    }
+
+    /**
+     * Get all player statuses (for admin)
+     */
+    async getPlayerStatuses() {
+        if (!this.currentRoom) {
+            throw new Error('Not in a room');
+        }
+
+        try {
+            const playersSnapshot = await this.getDocs(
+                this.collection(this.db, 'rooms', this.currentRoom, 'playerResults')
+            );
+            
+            const statuses = [];
+            playersSnapshot.forEach((doc) => {
+                const data = doc.data();
+                statuses.push({
+                    playerId: data.playerId,
+                    nickname: data.nickname,
+                    status: data.status || 'playing',
+                    scores: data.scores || []
+                });
+            });
+
+            return statuses;
+
+        } catch (error) {
+            console.error('Error getting player statuses:', error);
+            return [];
+        }
     }
 
     /**

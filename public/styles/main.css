@@ -242,3 +242,203 @@ input[type="range"] {
     background: rgba(255, 255, 255, 0.3);
     text-decoration: none;
 }
+
+/* Admin Panel Styles */
+.admin-panel {
+    position: fixed;
+    top: 20px;
+    right: 20px;
+    background: rgba(0, 0, 0, 0.9);
+    border-radius: 10px;
+    border: 2px solid #4CAF50;
+    color: white;
+    min-width: 300px;
+    z-index: 1000;
+}
+
+.admin-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 15px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.2);
+    background: rgba(76, 175, 80, 0.2);
+}
+
+.admin-header h3 {
+    margin: 0;
+    font-size: 1.1rem;
+}
+
+.toggle-btn {
+    background: none;
+    border: none;
+    color: white;
+    font-size: 1.2rem;
+    cursor: pointer;
+    padding: 5px;
+}
+
+.admin-content {
+    padding: 15px;
+}
+
+.player-statuses h4 {
+    margin: 0 0 10px 0;
+    font-size: 1rem;
+    color: #4CAF50;
+}
+
+.admin-player-list {
+    margin-bottom: 15px;
+}
+
+.admin-player-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 8px 0;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.admin-player-item:last-child {
+    border-bottom: none;
+}
+
+.admin-player-name {
+    font-weight: bold;
+}
+
+.admin-player-status {
+    font-size: 0.9rem;
+    padding: 2px 8px;
+    border-radius: 12px;
+}
+
+.admin-player-status.playing {
+    background: #FF9800;
+    color: white;
+}
+
+.admin-player-status.waiting {
+    background: #2196F3;
+    color: white;
+}
+
+.admin-player-status.done {
+    background: #4CAF50;
+    color: white;
+}
+
+.admin-controls {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    margin-bottom: 15px;
+}
+
+.admin-btn {
+    padding: 10px 15px;
+    border: none;
+    border-radius: 5px;
+    font-weight: bold;
+    cursor: pointer;
+    transition: background 0.3s;
+}
+
+.admin-btn:not(.end-btn) {
+    background: #4CAF50;
+    color: white;
+}
+
+.admin-btn:not(.end-btn):hover {
+    background: #45a049;
+}
+
+.admin-btn.end-btn {
+    background: #f44336;
+    color: white;
+}
+
+.admin-btn.end-btn:hover {
+    background: #d32f2f;
+}
+
+.admin-btn:disabled {
+    background: #ccc;
+    cursor: not-allowed;
+}
+
+.game-info {
+    font-size: 0.9rem;
+    color: rgba(255, 255, 255, 0.8);
+}
+
+.game-info div {
+    margin-bottom: 5px;
+}
+
+/* Waiting Screen Styles */
+.waiting-screen {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.8);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 2000;
+}
+
+.waiting-content {
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 20px;
+    padding: 40px;
+    text-align: center;
+    backdrop-filter: blur(10px);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    color: white;
+}
+
+.waiting-spinner {
+    width: 50px;
+    height: 50px;
+    border: 4px solid rgba(255, 255, 255, 0.3);
+    border-top: 4px solid white;
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+    margin: 0 auto 20px auto;
+}
+
+@keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+
+.waiting-content h3 {
+    margin-bottom: 10px;
+    font-size: 1.5rem;
+}
+
+.waiting-content p {
+    margin-bottom: 20px;
+    opacity: 0.9;
+}
+
+#waitingRoomInfo {
+    font-size: 0.9rem;
+    opacity: 0.7;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+    .admin-panel {
+        position: relative;
+        top: auto;
+        right: auto;
+        margin: 20px;
+        width: calc(100% - 40px);
+    }
+}
