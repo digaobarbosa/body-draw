@@ -20,8 +20,8 @@ class RoboflowAPI {
                 }
                 this.cache.delete(cacheKey);
             }
-            //const url = `https://serverless.roboflow.com/infer/workflows/${this.workspaceName}/${this.workflowId}`;
-            const url = `http://localhost:9001/infer/workflows/${this.workspaceName}/${this.workflowId}`;
+            const url = `https://serverless.roboflow.com/infer/workflows/${this.workspaceName}/${this.workflowId}`;
+            //const url = `http://localhost:9001/infer/workflows/${this.workspaceName}/${this.workflowId}`;
             const response = await fetch(url, {
                 method: 'POST',
                 headers: {
@@ -147,7 +147,7 @@ class RoboflowAPI {
         this.cache.clear();
     }
 
-    // Method to test API connectivity
+    // Method to test API connectivity (browser only - uses document.createElement)
     async testConnection() {
         try {
             // Create a simple test image (1x1 pixel)
@@ -169,4 +169,9 @@ class RoboflowAPI {
             return false;
         }
     }
+}
+
+// Export for Node.js if running in that environment
+if (typeof module !== 'undefined' && module.exports) {
+    module.exports = { RoboflowAPI };
 }

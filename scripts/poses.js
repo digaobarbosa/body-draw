@@ -9,6 +9,10 @@ class TargetPoses {
         this.targetKeypoints = [];
         this.currentTargetImage = null;
         this.roboflow = null; // Will be injected from game.js
+        this.preloadedKeypoints = null; // Will store cached keypoints data
+        
+        // Try to load pre-calculated keypoints on initialization
+        this.loadPreCalculatedKeypoints();
         
         // Define available poses - all use 1.webp for now
         this.poses = {
@@ -27,12 +31,19 @@ class TargetPoses {
                 description: 'Point with one arm extended',
                 image: 'assets/targets/3.png'
             },
-            sitting: {
-                name: 'Sitting',
-                description: 'Sitting position with hands on knees',
-                image: 'assets/targets/1.webp'
-            }
         };
+    }
+
+    async loadPreCalculatedKeypoints() {
+        try {
+            const response = await fetch('assets/targets/keypoints.json');
+            if (response.ok) {
+                this.preloadedKeypoints = await response.json();
+                console.log('✅ Pre-calculated keypoints loaded successfully');
+            }
+        } catch (error) {
+            console.log('⚠️ Could not load pre-calculated keypoints, will use API calls:', error.message);
+        }
     }
 
     setRoboflowInstance(roboflowInstance) {
@@ -133,8 +144,43 @@ class TargetPoses {
     }
 
     async processTargetImage() {
-        if (!this.currentTargetImage || !this.roboflow) {
-            console.error('Cannot process target image: missing image or Roboflow instance');
+        if (!this.currentTargetImage) {
+            console.error('Cannot process target image: missing image');
+            return;
+        }
+
+        // Get the filename from the current pose's image path
+        const imagePath = this.poses[this.currentPose].image;
+        const filename = imagePath.split('/').pop();
+
+        // Check if we have pre-calculated data for this image
+        if (this.preloadedKeypoints && this.preloadedKeypoints[filename]) {
+            console.log(`🔄 Using pre-calculated keypoints for ${filename}`);
+            
+            const cachedResult = this.preloadedKeypoints[filename];
+            
+            // Extract keypoints using the same logic as RoboflowAPI
+            const keypoints = this.roboflow ? this.roboflow.extractKeypoints(cachedResult) : [];
+            if (keypoints.length > 0) {
+                this.targetKeypoints = keypoints;
+                console.log(`✅ Pre-calculated keypoints loaded: ${this.targetKeypoints.length} keypoints`);
+            } else {
+                console.warn('⚠️ No keypoints found in pre-calculated data');
+            }
+
+            // Extract and display visualization
+            const visualization = this.roboflow ? this.roboflow.extractVisualizationImage(cachedResult) : null;
+            if (visualization) {
+                this.displayVisualizationOnTarget(visualization);
+                console.log('✅ Target image replaced with pre-calculated visualization');
+            }
+            
+            return;
+        }
+
+        // Fallback to API call if no cached data or no Roboflow instance
+        if (!this.roboflow) {
+            console.error('Cannot process target image: missing Roboflow instance and no cached data');
             return;
         }
 

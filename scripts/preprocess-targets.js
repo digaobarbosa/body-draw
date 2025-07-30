@@ -3,34 +3,13 @@
 const fs = require('fs');
 const path = require('path');
 
-// Simple API call function that mirrors the structure in roboflow.js
-async function callRoboflowAPI(imageBase64, thickness = 10) {
-    const url = 'http://localhost:9001/infer/workflows/rodrigo-xn5xn/keypoints-test';
-    const response = await fetch(url, {
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({
-            api_key: 'SLt1HjDiKA4nAQcHml4K',
-            inputs: {
-                "image": {"type": "base64", "value": imageBase64},
-                "thickness": thickness
-            }
-        })
-    });
-
-    if (!response.ok) {
-        throw new Error(`API request failed: ${response.status} ${response.statusText}`);
-    }
-
-    return await response.json();
-}
+// Import the RoboflowAPI class from the existing file
+const { RoboflowAPI } = require('./roboflow.js');
 
 // Configuration
 const ASSETS_DIR = path.join(__dirname, '..', 'assets', 'targets');
 const OUTPUT_FILE = path.join(ASSETS_DIR, 'keypoints.json');
-const THICKNESS = 10;
+const THICKNESS = 10; // Constant thickness value
 
 // Supported image extensions
 const IMAGE_EXTENSIONS = ['.png', '.jpg', '.jpeg', '.webp'];
@@ -51,7 +30,7 @@ async function processImage(imagePath, roboflowAPI) {
         // Load and convert image to base64
         const base64Image = await loadImageAsBase64(imagePath);
         
-        // Call Roboflow API using the same logic as roboflow.js
+        // Call Roboflow API using the imported class
         const result = await roboflowAPI.detectPose(base64Image, THICKNESS);
         console.log(`✓ Successfully processed ${filename}`);
         return result;
@@ -65,7 +44,7 @@ async function processImage(imagePath, roboflowAPI) {
 async function main() {
     console.log('Starting target image preprocessing...\n');
     
-    // Initialize RoboflowAPI
+    // Initialize RoboflowAPI using the imported class
     const roboflowAPI = new RoboflowAPI();
     
     // Get all image files in the assets/targets directory
