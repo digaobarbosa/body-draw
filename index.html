@@ -3,13 +3,13 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Visionary2 - Pose Drawing Game</title>
+    <title>Body Draw</title>
     <link rel="stylesheet" href="styles/main.css">
 </head>
 <body>
     <div class="game-container">
         <header>
-            <h1>Visionary2</h1>
+            <h1>Body Draw</h1>
             <p>Match poses with your body!</p>
         </header>
 
@@ -17,6 +17,9 @@
             <div class="target-section">
                 <h3>Target Pose</h3>
                 <canvas id="targetCanvas" width="300" height="300"></canvas>
+                <div id="targetPlaceholder" style="width: 260px; height: 260px; display: flex; align-items: center; justify-content: center; color: rgba(255,255,255,0.5); font-size: 1.2rem;">
+                    Press "Start Game" to begin
+                </div>
             </div>
 
             <div class="camera-section">
@@ -36,7 +39,6 @@
         <div class="controls">
             <button id="startGame">Start Game</button>
             <button id="nextTarget">Next Target</button>
-            <button id="calibrate">Calibrate</button>
             <select id="targetSelector">
                 <option value="tpose">T-Pose</option>
                 <option value="celebration">Arms Up</option>

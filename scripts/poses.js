@@ -60,6 +60,9 @@ class TargetPoses {
         const pose = this.poses[poseName];
 
         try {
+            // Show the target canvas and hide placeholder when loading a pose
+            this.toggleTargetDisplay(true);
+            
             // Clear canvases
             this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
             this.resultCtx.clearRect(0, 0, this.resultCanvas.width, this.resultCanvas.height);
@@ -183,35 +186,31 @@ class TargetPoses {
     }
 
     displayVisualizationOnTarget(base64Image) {
-        if (!base64Image) return;
-
-        const img = new Image();
-        img.onload = () => {
-            // Replace the target canvas content with the API visualization
-            this.displayImageOnCanvas(img, this.ctx, this.canvas);
-        };
-        
-        img.src = `data:image/jpeg;base64,${base64Image}`;
+        this.displayBase64ImageOnCanvas(base64Image, this.ctx, this.canvas);
     }
 
     displayVisualization(base64Image) {
-        if (!base64Image) return;
-
-        const img = new Image();
-        img.onload = () => {
-            // Display on the result canvas
-            this.displayImageOnCanvas(img, this.resultCtx, this.resultCanvas);
-            
-            // Hide video and show result canvas
+        this.displayBase64ImageOnCanvas(base64Image, this.resultCtx, this.resultCanvas, () => {
+            // Hide video and show result canvas after image loads
             const video = document.getElementById('webcam');
             const resultCanvas = document.getElementById('resultCanvas');
             if (video && resultCanvas) {
                 video.style.display = 'none';
                 resultCanvas.style.display = 'block';
             }
+        });
+    }
+
+    displayBase64ImageOnCanvas(base64Image, ctx, canvas, onLoad) {
+        if (!base64Image) return;
+
+        const img = new Image();
+        img.onload = () => {
+            this.displayImageOnCanvas(img, ctx, canvas);
+            if (onLoad) onLoad();
         };
         
-        img.src = `data:image/jpeg;base64,${base64Image}`;
+        img.src = base64Image.startsWith('data:') ? base64Image : `data:image/jpeg;base64,${base64Image}`;
     }
 
     clearVisualization() {
@@ -297,5 +296,15 @@ class TargetPoses {
         console.log(`📊 Simple pose similarity: ${Math.round(similarity)}% (${validComparisons} valid comparisons, avg distance: ${averageDistance.toFixed(2)})`);
         
         return Math.round(similarity);
+    }
+
+    toggleTargetDisplay(showTarget) {
+        if (this.canvas) {
+            this.canvas.style.display = showTarget ? 'block' : 'none';
+        }
+        const placeholder = document.getElementById('targetPlaceholder');
+        if (placeholder) {
+            placeholder.style.display = showTarget ? 'none' : 'flex';
+        }
     }
 }

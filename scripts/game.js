@@ -18,7 +18,6 @@ class PoseMatchingGame {
         this.elements = {
             startButton: document.getElementById('startGame'),
             nextTargetButton: document.getElementById('nextTarget'),
-            calibrateButton: document.getElementById('calibrate'),
             targetSelector: document.getElementById('targetSelector'),
             thicknessSlider: document.getElementById('thicknessSlider'),
             thicknessValue: document.getElementById('thicknessValue'),
@@ -41,7 +40,6 @@ class PoseMatchingGame {
     initializeEventListeners() {
         this.elements.startButton.addEventListener('click', () => this.toggleGame());
         this.elements.nextTargetButton.addEventListener('click', () => this.nextTarget());
-        this.elements.calibrateButton.addEventListener('click', () => this.calibrate());
         
         this.elements.targetSelector.addEventListener('change', (e) => {
             this.poses.loadTargetPose(e.target.value);
@@ -63,10 +61,9 @@ class PoseMatchingGame {
 
     async startGame() {
         try {
-            this.updateStatus('Initializing camera...');
-            
-            const cameraReady = await this.camera.initialize();
-            if (!cameraReady) {
+            // Camera is already initialized on page load
+            if (!this.camera.isActive) {
+                this.updateStatus('Camera not available. Please refresh the page.');
                 return;
             }
 
@@ -77,7 +74,7 @@ class PoseMatchingGame {
                 return;
             }
 
-            // Load initial target pose
+            // Load initial target pose when game starts
             await this.poses.loadTargetPose(this.elements.targetSelector.value);
 
             // Start preparation phase
@@ -96,18 +93,27 @@ class PoseMatchingGame {
     }
 
     startPreparationCountdown() {
-        this.updateStatus('Get ready! Game starts in 3 seconds...');
-        let countdown = 3;
+        this.startCountdown(3, 
+            (remaining) => this.updateStatus(`Get ready! Game starts in ${remaining} seconds...`),
+            () => this.startMatchingPhase()
+        );
+    }
+
+    startCountdown(seconds, onTick, onComplete) {
+        let remaining = seconds;
+        onTick(remaining);
         
-        const countdownInterval = setInterval(() => {
-            if (countdown > 0) {
-                this.updateStatus(`Get ready! Game starts in ${countdown} seconds...`);
-                countdown--;
+        const interval = setInterval(() => {
+            remaining--;
+            if (remaining > 0) {
+                onTick(remaining);
             } else {
-                clearInterval(countdownInterval);
-                this.startMatchingPhase();
+                clearInterval(interval);
+                onComplete();
             }
         }, 1000);
+        
+        return interval;
     }
 
     startMatchingPhase() {
@@ -193,7 +199,12 @@ class PoseMatchingGame {
             this.timerInterval = null;
         }
         
-        this.camera.stop();
+        // Hide target canvas and show placeholder when game stops
+        this.toggleTargetDisplay(false);
+        
+        // Clear the result visualization
+        this.poses.clearVisualization();
+        
         this.updateStatus('Game stopped.');
         this.updateUI();
     }
@@ -206,9 +217,8 @@ class PoseMatchingGame {
             this.timerInterval = null;
         }
         
-        // Calculate final score based on best accuracy and consistency
-        const timeBonus = Math.max(0, this.gameState.timeRemaining * 2);
-        const finalScore = this.gameState.bestAccuracy + timeBonus;
+        // Calculate final score (since it's single-shot, no time bonus needed)
+        const finalScore = this.gameState.bestAccuracy;
         this.gameState.score = finalScore;
         
         this.updateStatus(`Time's up! Final score: ${finalScore} (Best accuracy: ${this.gameState.bestAccuracy}%)`);
@@ -238,40 +248,22 @@ class PoseMatchingGame {
         this.updateStatus(`New target: ${this.elements.targetSelector.value}`);
     }
 
-    async calibrate() {
-        this.updateStatus('Calibrating... Stand in T-pose for 3 seconds.');
-        
-        // Simple calibration - could be enhanced
-        setTimeout(() => {
-            this.updateStatus('Calibration complete!');
-        }, 3000);
-    }
 
     updateUI() {
         // Update button states based on game phase
-        if (this.gameState.phase === 'idle') {
-            this.elements.startButton.textContent = 'Start Game';
-            this.elements.startButton.disabled = false;
-            this.elements.nextTargetButton.disabled = false;
-            this.elements.targetSelector.disabled = false;
-        } else if (this.gameState.phase === 'preparing') {
-            this.elements.startButton.textContent = 'Stop Game';
-            this.elements.startButton.disabled = false;
-            this.elements.nextTargetButton.disabled = true;
-            this.elements.targetSelector.disabled = true;
-        } else if (this.gameState.phase === 'matching') {
-            this.elements.startButton.textContent = 'Stop Game';
-            this.elements.startButton.disabled = false;
-            this.elements.nextTargetButton.disabled = true;
-            this.elements.targetSelector.disabled = true;
-        } else if (this.gameState.phase === 'results') {
-            this.elements.startButton.textContent = 'Start Game';
-            this.elements.startButton.disabled = false;
-            this.elements.nextTargetButton.disabled = false;
-            this.elements.targetSelector.disabled = false;
-        }
+        const phaseConfig = {
+            'idle': { buttonText: 'Start Game', canChangeTarget: true },
+            'preparing': { buttonText: 'Stop Game', canChangeTarget: false },
+            'matching': { buttonText: 'Stop Game', canChangeTarget: false },
+            'results': { buttonText: 'Start Game', canChangeTarget: true }
+        };
         
-        this.elements.calibrateButton.disabled = !this.gameState.isPlaying;
+        const config = phaseConfig[this.gameState.phase] || phaseConfig['idle'];
+        
+        this.elements.startButton.textContent = config.buttonText;
+        this.elements.startButton.disabled = false;
+        this.elements.nextTargetButton.disabled = !config.canChangeTarget;
+        this.elements.targetSelector.disabled = !config.canChangeTarget;
         
         // Update timer display
         this.elements.gameTimer.textContent = this.gameState.timeRemaining;
@@ -314,14 +306,28 @@ class PoseMatchingGame {
     updateDebugInfo(info) {
         this.elements.debugInfo.textContent = info;
     }
+
+    toggleTargetDisplay(showTarget) {
+        const targetCanvas = document.getElementById('targetCanvas');
+        const placeholder = document.getElementById('targetPlaceholder');
+        
+        if (targetCanvas) {
+            targetCanvas.style.display = showTarget ? 'block' : 'none';
+        }
+        if (placeholder) {
+            placeholder.style.display = showTarget ? 'none' : 'flex';
+        }
+    }
 }
 
 // Initialize the game when the page loads
 document.addEventListener('DOMContentLoaded', async () => {
     const game = new PoseMatchingGame();
     
-    // Set initial target pose (roboflow instance is already set in constructor)
-    await game.poses.loadTargetPose('tpose');
+    // Initialize camera immediately on page load
+    await game.camera.initialize();
+    
+    // Don't load target pose until game starts
     
     console.log('Visionary2 Pose Matching Game initialized');
 });
