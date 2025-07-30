@@ -4,12 +4,14 @@
   "description": "A static web game that uses Roboflow's YOLOv8m pose detection to let players \"draw\" target shapes with their body movements using their webcam.",
   "main": "index.html",
   "scripts": {
-    "dev": "python3 -m http.server 3000",
+    "dev": "cd public && python3 -m http.server 3001",
+    "dev:firebase": "firebase serve --only hosting",
     "build": "echo \"Static site - no build step needed\"",
     "preview": "python3 -m http.server 8080",
     "test": "jest",
     "test:watch": "jest --watch",
-    "precalculate-images": "node scripts/preprocess-targets.js"
+    "precalculate-images": "node scripts/preprocess-targets.js",
+    "deploy": "firebase deploy --only hosting"
   },
   "keywords": [
     "game",

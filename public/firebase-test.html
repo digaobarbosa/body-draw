@@ -1,0 +1,208 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Firebase Test</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 600px;
+            margin: 50px auto;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+        .container {
+            background: white;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        button {
+            background: #4285f4;
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 16px;
+            margin: 10px 5px;
+        }
+        button:hover {
+            background: #3367d6;
+        }
+        button:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+        }
+        .status {
+            margin: 20px 0;
+            padding: 15px;
+            border-radius: 5px;
+            font-weight: bold;
+        }
+        .success {
+            background: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+        .error {
+            background: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+        .info {
+            background: #d1ecf1;
+            color: #0c5460;
+            border: 1px solid #bee5eb;
+        }
+        .test-data {
+            background: #f8f9fa;
+            padding: 15px;
+            border-radius: 5px;
+            margin: 10px 0;
+            font-family: monospace;
+            font-size: 14px;
+            overflow-x: auto;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🔥 Firebase Connection Test</h1>
+        <p>This page tests Firebase Firestore database connectivity.</p>
+        
+        <div>
+            <button id="writeTest" onclick="writeTestData()">📝 Write Test Data</button>
+            <button id="readTest" onclick="readTestData()">📖 Read Test Data</button>
+            <button id="clearResults" onclick="clearResults()">🗑️ Clear Results</button>
+        </div>
+
+        <div id="status"></div>
+        <div id="results"></div>
+    </div>
+
+    <!-- Firebase SDKs -->
+    <script type="module">
+        // Firebase configuration - REPLACE WITH YOUR ACTUAL CONFIG
+        const firebaseConfig = {
+            // You need to replace these with your actual Firebase project config
+            apiKey: "your-api-key-here",
+            authDomain: "your-project-id.firebaseapp.com", 
+            projectId: "your-project-id",
+            storageBucket: "your-project-id.appspot.com",
+            messagingSenderId: "your-sender-id",
+            appId: "your-app-id"
+        };
+
+        // Import Firebase functions
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+        import { getFirestore, collection, addDoc, getDocs, doc, deleteDoc, query, orderBy, limit } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+
+        // Initialize Firebase
+        let app, db;
+        
+        try {
+            app = initializeApp(firebaseConfig);
+            db = getFirestore(app);
+            updateStatus('🔥 Firebase initialized successfully!', 'success');
+            document.getElementById('writeTest').disabled = false;
+            document.getElementById('readTest').disabled = false;
+        } catch (error) {
+            updateStatus('❌ Firebase initialization failed: ' + error.message, 'error');
+            console.error('Firebase init error:', error);
+        }
+
+        // Make functions available globally
+        window.writeTestData = async function() {
+            if (!db) {
+                updateStatus('❌ Firebase not initialized', 'error');
+                return;
+            }
+
+            updateStatus('📝 Writing test data...', 'info');
+            
+            try {
+                const testData = {
+                    message: 'Hello Firebase!',
+                    timestamp: new Date(),
+                    randomNumber: Math.floor(Math.random() * 1000),
+                    testType: 'connection-test',
+                    userAgent: navigator.userAgent.substring(0, 50) + '...'
+                };
+
+                const docRef = await addDoc(collection(db, 'test-collection'), testData);
+                
+                updateStatus(`✅ Test data written successfully! Document ID: ${docRef.id}`, 'success');
+                
+                document.getElementById('results').innerHTML = `
+                    <div class="test-data">
+                        <strong>Written data:</strong><br>
+                        ${JSON.stringify(testData, null, 2)}
+                    </div>
+                `;
+                
+            } catch (error) {
+                updateStatus('❌ Error writing data: ' + error.message, 'error');
+                console.error('Write error:', error);
+            }
+        };
+
+        window.readTestData = async function() {
+            if (!db) {
+                updateStatus('❌ Firebase not initialized', 'error');
+                return;
+            }
+
+            updateStatus('📖 Reading test data...', 'info');
+            
+            try {
+                const q = query(
+                    collection(db, 'test-collection'), 
+                    orderBy('timestamp', 'desc'), 
+                    limit(5)
+                );
+                
+                const querySnapshot = await getDocs(q);
+                
+                if (querySnapshot.empty) {
+                    updateStatus('📭 No test data found. Try writing some first!', 'info');
+                    return;
+                }
+                
+                const docs = [];
+                querySnapshot.forEach((doc) => {
+                    docs.push({
+                        id: doc.id,
+                        ...doc.data()
+                    });
+                });
+                
+                updateStatus(`✅ Successfully read ${docs.length} documents!`, 'success');
+                
+                document.getElementById('results').innerHTML = `
+                    <div class="test-data">
+                        <strong>Read data (last 5 entries):</strong><br>
+                        ${JSON.stringify(docs, null, 2)}
+                    </div>
+                `;
+                
+            } catch (error) {
+                updateStatus('❌ Error reading data: ' + error.message, 'error');
+                console.error('Read error:', error);
+            }
+        };
+
+        window.clearResults = function() {
+            document.getElementById('results').innerHTML = '';
+            document.getElementById('status').innerHTML = '';
+        };
+
+        function updateStatus(message, type) {
+            const statusDiv = document.getElementById('status');
+            statusDiv.innerHTML = `<div class="status ${type}">${message}</div>`;
+            console.log(message);
+        }
+    </script>
+</body>
+</html>

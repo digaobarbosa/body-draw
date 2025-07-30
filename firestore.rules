@@ -1,0 +1,26 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // Allow read/write access to game scores and leaderboard
+    match /scores/{document} {
+      allow create: if true; // Allow anyone to create scores
+      allow read: if true;   // Allow anyone to read scores for leaderboard
+      allow update: if false; // Prevent score updates (immutable)
+      allow delete: if false; // Prevent score deletion
+    }
+    
+    // Allow read/write access to game sessions
+    match /sessions/{document} {
+      allow create: if true; // Allow anyone to create sessions
+      allow read: if true;   // Allow anyone to read sessions
+      allow update: if true; // Allow session updates
+      allow delete: if false; // Prevent session deletion
+    }
+    
+    // Allow read access to game statistics
+    match /stats/{document} {
+      allow read: if true;
+      allow write: if false; // Only server can update stats
+    }
+  }
+}
