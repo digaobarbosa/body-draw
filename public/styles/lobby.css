@@ -1,0 +1,545 @@
+/* Lobby and Admin Pages Styling */
+
+/* Common container styles */
+.admin-container,
+.lobby-container {
+    max-width: 600px;
+    margin: 0 auto;
+    padding: 20px;
+    min-height: 100vh;
+}
+
+/* Create Room Section (Admin) */
+.create-section {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: 60vh;
+}
+
+.create-card {
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 15px;
+    padding: 40px;
+    text-align: center;
+    min-width: 350px;
+    backdrop-filter: blur(10px);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+.create-card h3 {
+    margin-bottom: 20px;
+    font-size: 1.8rem;
+    color: white;
+}
+
+.create-card input {
+    width: 100%;
+    padding: 15px;
+    margin-bottom: 20px;
+    border: none;
+    border-radius: 8px;
+    font-size: 16px;
+    background: rgba(255, 255, 255, 0.9);
+    color: #333;
+}
+
+.create-card input::placeholder {
+    color: #666;
+}
+
+.create-card button {
+    width: 100%;
+    padding: 15px;
+    background: #4CAF50;
+    color: white;
+    border: none;
+    border-radius: 8px;
+    font-size: 16px;
+    font-weight: bold;
+    cursor: pointer;
+    transition: background 0.3s;
+}
+
+.create-card button:hover:not(:disabled) {
+    background: #45a049;
+}
+
+.create-card button:disabled {
+    background: #ccc;
+    cursor: not-allowed;
+}
+
+/* Room Management Section (Admin) */
+.room-management {
+    margin-top: 20px;
+}
+
+.room-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 30px;
+    padding-bottom: 20px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.3);
+    flex-wrap: wrap;
+    gap: 15px;
+}
+
+.room-header h2 {
+    margin: 0;
+    font-size: 1.6rem;
+    color: white;
+}
+
+.room-controls {
+    display: flex;
+    gap: 10px;
+    flex-wrap: wrap;
+}
+
+.start-btn {
+    background: #FF9800;
+    color: white;
+    border: none;
+    padding: 12px 24px;
+    border-radius: 8px;
+    font-weight: bold;
+    cursor: pointer;
+    transition: background 0.3s;
+}
+
+.start-btn:hover:not(:disabled) {
+    background: #F57C00;
+}
+
+.start-btn:disabled {
+    background: #ccc;
+    cursor: not-allowed;
+}
+
+.close-btn {
+    background: #f44336;
+    color: white;
+    border: none;
+    padding: 12px 24px;
+    border-radius: 8px;
+    font-weight: bold;
+    cursor: pointer;
+    transition: background 0.3s;
+}
+
+.close-btn:hover {
+    background: #d32f2f;
+}
+
+/* Share Link Section */
+.share-section {
+    margin-bottom: 30px;
+    background: rgba(255, 255, 255, 0.1);
+    padding: 20px;
+    border-radius: 10px;
+}
+
+.share-section label {
+    display: block;
+    margin-bottom: 10px;
+    font-weight: bold;
+    color: white;
+}
+
+.share-link {
+    display: flex;
+    gap: 10px;
+    align-items: center;
+}
+
+.share-link input {
+    flex: 1;
+    padding: 10px;
+    border: none;
+    border-radius: 5px;
+    background: rgba(255, 255, 255, 0.9);
+    color: #333;
+    font-family: monospace;
+    font-size: 14px;
+}
+
+#copyLinkBtn {
+    background: #2196F3;
+    color: white;
+    border: none;
+    padding: 10px 15px;
+    border-radius: 5px;
+    cursor: pointer;
+    font-weight: bold;
+    white-space: nowrap;
+    transition: background 0.3s;
+}
+
+#copyLinkBtn:hover {
+    background: #1976D2;
+}
+
+/* Username Screen (Player) */
+.username-screen {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: 70vh;
+}
+
+.username-card {
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 15px;
+    padding: 40px;
+    text-align: center;
+    min-width: 350px;
+    backdrop-filter: blur(10px);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+.username-card h3 {
+    margin-bottom: 10px;
+    font-size: 1.8rem;
+    color: white;
+}
+
+.username-card p {
+    margin-bottom: 20px;
+    opacity: 0.9;
+    color: white;
+}
+
+.username-card input {
+    width: 100%;
+    padding: 15px;
+    margin-bottom: 20px;
+    border: none;
+    border-radius: 8px;
+    font-size: 16px;
+    background: rgba(255, 255, 255, 0.9);
+    color: #333;
+}
+
+.username-card button {
+    width: 100%;
+    padding: 15px;
+    background: #4CAF50;
+    color: white;
+    border: none;
+    border-radius: 8px;
+    font-size: 16px;
+    font-weight: bold;
+    cursor: pointer;
+    transition: background 0.3s;
+}
+
+.username-card button:hover:not(:disabled) {
+    background: #45a049;
+}
+
+.username-card button:disabled {
+    background: #ccc;
+    cursor: not-allowed;
+}
+
+/* Lobby Screen (Player) */
+.lobby-screen {
+    margin-top: 20px;
+}
+
+.lobby-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 30px;
+    padding-bottom: 20px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.3);
+    flex-wrap: wrap;
+    gap: 15px;
+}
+
+.lobby-header h2 {
+    margin: 0;
+    font-size: 1.6rem;
+    color: white;
+}
+
+.lobby-status-indicator {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    color: white;
+}
+
+.status-dot {
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+    background: #4CAF50;
+    animation: pulse 2s infinite;
+}
+
+@keyframes pulse {
+    0% { opacity: 1; }
+    50% { opacity: 0.5; }
+    100% { opacity: 1; }
+}
+
+/* Players Section */
+.players-section {
+    margin-bottom: 30px;
+}
+
+.players-section h3 {
+    margin-bottom: 15px;
+    color: white;
+    font-size: 1.3rem;
+}
+
+.players-list {
+    display: grid;
+    gap: 10px;
+}
+
+.player-card {
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 10px;
+    padding: 15px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+.player-info {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.player-avatar {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    background: linear-gradient(45deg, #FF6B6B, #4ECDC4);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: bold;
+    color: white;
+    font-size: 1.2rem;
+}
+
+.player-name {
+    font-weight: bold;
+    color: white;
+}
+
+.player-host {
+    background: #FFD700;
+    color: #333;
+    padding: 2px 8px;
+    border-radius: 12px;
+    font-size: 0.8rem;
+    font-weight: bold;
+    margin-top: 4px;
+    display: inline-block;
+}
+
+.connection-status {
+    font-size: 1.2rem;
+}
+
+.connection-status.connected {
+    color: #4CAF50;
+}
+
+/* Waiting Section (Player) */
+.waiting-section {
+    text-align: center;
+    padding: 40px 20px;
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 15px;
+    margin-top: 20px;
+}
+
+.waiting-message h3 {
+    margin-bottom: 10px;
+    color: white;
+    font-size: 1.5rem;
+}
+
+.waiting-message p {
+    opacity: 0.9;
+    color: white;
+    margin-bottom: 20px;
+}
+
+.loading-spinner {
+    width: 40px;
+    height: 40px;
+    border: 4px solid rgba(255, 255, 255, 0.3);
+    border-top: 4px solid white;
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+    margin: 0 auto 20px auto;
+}
+
+@keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+
+/* Error Screen (Player) */
+.error-screen {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: 70vh;
+}
+
+.error-card {
+    background: rgba(244, 67, 54, 0.1);
+    border-radius: 15px;
+    padding: 40px;
+    text-align: center;
+    min-width: 350px;
+    backdrop-filter: blur(10px);
+    border: 1px solid rgba(244, 67, 54, 0.3);
+}
+
+.error-card h3 {
+    margin-bottom: 15px;
+    font-size: 1.8rem;
+    color: #ffcdd2;
+}
+
+.error-card p {
+    margin-bottom: 25px;
+    opacity: 0.9;
+    color: white;
+}
+
+.error-card button {
+    padding: 12px 30px;
+    background: #f44336;
+    color: white;
+    border: none;
+    border-radius: 8px;
+    font-weight: bold;
+    cursor: pointer;
+    transition: background 0.3s;
+}
+
+.error-card button:hover {
+    background: #d32f2f;
+}
+
+/* Room Status */
+.room-status {
+    margin-top: 20px;
+    text-align: center;
+    padding: 15px;
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 10px;
+    color: white;
+}
+
+/* Message Modal */
+.message-modal {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.7);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 1000;
+}
+
+.message-content {
+    background: white;
+    color: #333;
+    padding: 30px;
+    border-radius: 15px;
+    text-align: center;
+    max-width: 400px;
+    width: 90%;
+}
+
+.message-content button {
+    margin-top: 20px;
+    padding: 10px 30px;
+    background: #2196F3;
+    color: white;
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
+    font-weight: bold;
+}
+
+/* Back Link */
+.back-link {
+    margin-top: 40px;
+    text-align: center;
+}
+
+.back-link a {
+    color: rgba(255, 255, 255, 0.8);
+    text-decoration: none;
+    font-size: 1.1rem;
+    transition: color 0.3s;
+}
+
+.back-link a:hover {
+    color: white;
+    text-decoration: underline;
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+    .admin-container,
+    .lobby-container {
+        padding: 15px;
+    }
+    
+    .create-card,
+    .username-card,
+    .error-card {
+        min-width: auto;
+        width: 100%;
+        max-width: 400px;
+        padding: 30px 20px;
+    }
+    
+    .room-header {
+        flex-direction: column;
+        align-items: flex-start;
+    }
+    
+    .room-controls {
+        width: 100%;
+        justify-content: stretch;
+    }
+    
+    .room-controls button {
+        flex: 1;
+    }
+    
+    .share-link {
+        flex-direction: column;
+        gap: 10px;
+    }
+    
+    .share-link input {
+        width: 100%;
+    }
+    
+    #copyLinkBtn {
+        width: 100%;
+    }
+}

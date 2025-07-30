@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Create Room - Body Draw Admin</title>
+    <link rel="stylesheet" href="styles/main.css">
+    <link rel="stylesheet" href="styles/lobby.css">
+</head>
+<body>
+    <div class="admin-container">
+        <header>
+            <h1>🎮 Body Draw Admin</h1>
+            <p>Create and manage multiplayer rooms</p>
+        </header>
+
+        <!-- Room Creation Section -->
+        <div id="createSection" class="create-section">
+            <div class="create-card">
+                <h3>Create New Room</h3>
+                <input type="text" id="roomNameInput" placeholder="Enter room name (e.g., raccoon, tiger)" maxlength="20">
+                <button id="createRoomBtn" disabled>Create Room</button>
+            </div>
+        </div>
+
+        <!-- Room Management Section -->
+        <div id="roomManagement" class="room-management" style="display: none;">
+            <div class="room-header">
+                <h2 id="currentRoomTitle">Room: room-raccoon</h2>
+                <div class="room-controls">
+                    <button id="startGameBtn" class="start-btn" disabled>Start Game</button>
+                    <button id="closeRoomBtn" class="close-btn">Close Room</button>
+                </div>
+            </div>
+
+            <div class="share-section">
+                <label>Share this link with players:</label>
+                <div class="share-link">
+                    <input type="text" id="shareableLink" readonly>
+                    <button id="copyLinkBtn">📋 Copy</button>
+                </div>
+            </div>
+
+            <div class="players-section">
+                <h3>Players (<span id="playerCount">0</span>)</h3>
+                <div id="playersList" class="players-list">
+                    <!-- Players will be dynamically added here -->
+                </div>
+            </div>
+
+            <div class="room-status">
+                <div id="roomStatusMessage">Waiting for players to join...</div>
+            </div>
+        </div>
+
+        <!-- Message Modal -->
+        <div id="messageModal" class="message-modal" style="display: none;">
+            <div class="message-content">
+                <div id="messageText">Loading...</div>
+                <button id="messageClose" style="display: none;">OK</button>
+            </div>
+        </div>
+
+        <!-- Back to Game -->
+        <div class="back-link">
+            <a href="index.html">← Back to Single Player</a>
+        </div>
+    </div>
+
+    <!-- Scripts -->
+    <script type="module" src="scripts/firebase-config.js"></script>
+    <script src="scripts/multiplayer.js"></script>
+    <script src="scripts/lobby.js"></script>
+</body>
+</html>

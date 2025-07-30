@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Body Draw - Multiplayer Lobby</title>
+    <link rel="stylesheet" href="styles/main.css">
+    <link rel="stylesheet" href="styles/lobby.css">
+</head>
+<body>
+    <div class="lobby-container">
+        <header>
+            <h1>🎮 Body Draw</h1>
+            <p>Match poses with friends!</p>
+        </header>
+
+        <!-- Username Input Screen -->
+        <div id="usernameScreen" class="username-screen">
+            <div class="username-card">
+                <h3>Join the Game</h3>
+                <p>Room: <strong id="roomDisplay">Loading...</strong></p>
+                <input type="text" id="usernameInput" placeholder="Enter your username" maxlength="20" autofocus>
+                <button id="joinRoomBtn" disabled>Join Room</button>
+            </div>
+        </div>
+
+        <!-- Lobby Screen -->
+        <div id="lobbyScreen" class="lobby-screen" style="display: none;">
+            <div class="lobby-header">
+                <h2 id="lobbyRoomTitle">Room: room-raccoon</h2>
+                <div class="lobby-status-indicator">
+                    <div class="status-dot"></div>
+                    <span>Connected</span>
+                </div>
+            </div>
+
+            <div class="lobby-content">
+                <div class="players-section">
+                    <h3>Players (<span id="lobbyPlayerCount">1</span>)</h3>
+                    <div id="lobbyPlayersList" class="players-list">
+                        <!-- Players will be dynamically added here -->
+                    </div>
+                </div>
+
+                <div class="waiting-section">
+                    <div class="waiting-message">
+                        <div class="loading-spinner"></div>
+                        <h3>Waiting for host to start the game...</h3>
+                        <p>The game will begin automatically when the host starts it.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Error Screen -->
+        <div id="errorScreen" class="error-screen" style="display: none;">
+            <div class="error-card">
+                <h3>❌ Room Not Found</h3>
+                <p id="errorMessage">The room you're trying to join doesn't exist or has been closed.</p>
+                <button id="retryBtn">Try Again</button>
+            </div>
+        </div>
+
+        <!-- Message Modal -->
+        <div id="messageModal" class="message-modal" style="display: none;">
+            <div class="message-content">
+                <div id="messageText">Loading...</div>
+                <button id="messageClose" style="display: none;">OK</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Scripts -->
+    <script type="module" src="scripts/firebase-config.js"></script>
+    <script src="scripts/multiplayer.js"></script>
+    <script src="scripts/lobby.js"></script>
+</body>
+</html>

@@ -219,3 +219,26 @@ input[type="range"] {
         height: 225px;
     }
 }
+
+/* Multiplayer link styling */
+.game-modes {
+    margin-top: 15px;
+    text-align: center;
+}
+
+.multiplayer-link {
+    display: inline-block;
+    background: rgba(255, 255, 255, 0.2);
+    color: white;
+    text-decoration: none;
+    padding: 10px 20px;
+    border-radius: 8px;
+    font-weight: bold;
+    transition: background 0.3s;
+    border: 1px solid rgba(255, 255, 255, 0.3);
+}
+
+.multiplayer-link:hover {
+    background: rgba(255, 255, 255, 0.3);
+    text-decoration: none;
+}

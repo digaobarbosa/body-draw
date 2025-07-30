@@ -1,10 +1,23 @@
 /**
- * Enhanced Pose Comparison Algorithm
- * Uses angle-based comparison with selective keypoint filtering
+ * Pose Comparison Strategies
+ * Multiple algorithms for comparing pose similarity
  */
 
-class PoseComparison {
+// Base strategy interface
+class PoseComparisonStrategy {
+    calculatePoseSimilarity(playerKeypoints, targetKeypoints) {
+        throw new Error('Strategy must implement calculatePoseSimilarity method');
+    }
+    
+    getName() {
+        throw new Error('Strategy must implement getName method');
+    }
+}
+
+// Enhanced Angle-based Strategy (current algorithm)
+class EnhancedAngleStrategy extends PoseComparisonStrategy {
     constructor() {
+        super();
         // Define keypoint indices for COCO pose format
         this.KEYPOINT_INDICES = {
             nose: 0,
@@ -309,6 +322,10 @@ class PoseComparison {
         return similarity;
     }
 
+    getName() {
+        return 'enhanced-angle';
+    }
+
     /**
      * Main comparison function combining position and angle similarities
      */
@@ -344,6 +361,533 @@ class PoseComparison {
             console.error('Error calculating pose similarity:', error);
             return 0;
         }
+    }
+}
+
+// Aligned Distance-based Strategy
+class AlignedDistanceStrategy extends PoseComparisonStrategy {
+    constructor() {
+        super();
+        this.MIN_CONFIDENCE = 0.04;
+        this.SELECTED_KEYPOINTS = [
+            'nose',
+            'left_shoulder', 'right_shoulder',
+            'left_elbow', 'right_elbow', 
+            'left_wrist', 'right_wrist',
+            'left_hip', 'right_hip',
+            'left_knee', 'right_knee',
+            'left_ankle', 'right_ankle'
+        ];
+        
+        // Keypoint importance weights
+        this.KEYPOINT_WEIGHTS = {
+            'nose': 2.0,
+            'left_shoulder': 3.0, 'right_shoulder': 3.0,
+            'left_elbow': 4.0, 'right_elbow': 4.0,
+            'left_wrist': 5.0, 'right_wrist': 5.0,  // Arms are most important
+            'left_hip': 2.0, 'right_hip': 2.0,
+            'left_knee': 1.5, 'right_knee': 1.5,
+            'left_ankle': 1.0, 'right_ankle': 1.0
+        };
+    }
+
+    getName() {
+        return 'aligned-distance';
+    }
+
+    keypointsToObject(keypoints) {
+        const keypointObj = {};
+        keypoints.forEach(point => {
+            if (point.class && point.confidence >= this.MIN_CONFIDENCE) {
+                keypointObj[point.class] = point;
+            }
+        });
+        return keypointObj;
+    }
+
+    // Find reference point (nose) for alignment
+    getReferencePoint(keypointObj) {
+        // Prefer nose as reference point
+        if (keypointObj.nose) {
+            return keypointObj.nose;
+        }
+        
+        // Fallback to center of shoulders
+        const leftShoulder = keypointObj.left_shoulder;
+        const rightShoulder = keypointObj.right_shoulder;
+        if (leftShoulder && rightShoulder) {
+            return {
+                x: (leftShoulder.x + rightShoulder.x) / 2,
+                y: (leftShoulder.y + rightShoulder.y) / 2,
+                confidence: Math.min(leftShoulder.confidence, rightShoulder.confidence),
+                class: 'shoulder_center'
+            };
+        }
+        
+        // Last resort: use any available high-confidence point
+        const availablePoints = Object.values(keypointObj)
+            .filter(p => p.confidence > 0.3)
+            .sort((a, b) => b.confidence - a.confidence);
+        
+        return availablePoints.length > 0 ? availablePoints[0] : null;
+    }
+
+    // Align poses by translating reference point to origin
+    alignPoses(playerObj, targetObj) {
+        const playerRef = this.getReferencePoint(playerObj);
+        const targetRef = this.getReferencePoint(targetObj);
+        
+        if (!playerRef || !targetRef) {
+            return { alignedPlayer: playerObj, alignedTarget: targetObj };
+        }
+        
+        const alignedPlayer = {};
+        const alignedTarget = {};
+        
+        // Translate player keypoints
+        Object.keys(playerObj).forEach(key => {
+            const point = playerObj[key];
+            alignedPlayer[key] = {
+                x: point.x - playerRef.x,
+                y: point.y - playerRef.y,
+                confidence: point.confidence,
+                class: point.class
+            };
+        });
+        
+        // Translate target keypoints
+        Object.keys(targetObj).forEach(key => {
+            const point = targetObj[key];
+            alignedTarget[key] = {
+                x: point.x - targetRef.x,
+                y: point.y - targetRef.y,
+                confidence: point.confidence,
+                class: point.class
+            };
+        });
+        
+        return { alignedPlayer, alignedTarget };
+    }
+
+    calculatePoseSimilarity(playerKeypoints, targetKeypoints) {
+        if (!playerKeypoints || playerKeypoints.length === 0 || 
+            !targetKeypoints || targetKeypoints.length === 0) {
+            return 0;
+        }
+        
+        try {
+            const playerObj = this.keypointsToObject(playerKeypoints);
+            const targetObj = this.keypointsToObject(targetKeypoints);
+            
+            const { alignedPlayer, alignedTarget } = this.alignPoses(playerObj, targetObj);
+            
+            let totalWeightedDistance = 0;
+            let totalWeight = 0;
+            
+            // Compare aligned keypoints
+            this.SELECTED_KEYPOINTS.forEach(keypointName => {
+                const playerPoint = alignedPlayer[keypointName];
+                const targetPoint = alignedTarget[keypointName];
+                
+                if (playerPoint && targetPoint) {
+                    const distance = Math.sqrt(
+                        Math.pow(playerPoint.x - targetPoint.x, 2) + 
+                        Math.pow(playerPoint.y - targetPoint.y, 2)
+                    );
+                    
+                    // Weight by keypoint importance and confidence
+                    const importanceWeight = this.KEYPOINT_WEIGHTS[keypointName] || 1.0;
+                    const confidenceWeight = Math.min(playerPoint.confidence, targetPoint.confidence);
+                    const combinedWeight = importanceWeight * confidenceWeight;
+                    
+                    totalWeightedDistance += distance * combinedWeight;
+                    totalWeight += combinedWeight;
+                }
+            });
+            
+            if (totalWeight === 0) return 0;
+            
+            const averageDistance = totalWeightedDistance / totalWeight;
+            
+            // Convert to similarity score (0-100)
+            // Normalize distance based on typical pose dimensions
+            const maxDistance = 200; // Pixels - adjust based on image size
+            const similarity = Math.max(0, 100 - (averageDistance / maxDistance) * 100);
+            
+            return Math.round(similarity);
+            
+        } catch (error) {
+            console.error('Error in AlignedDistanceStrategy:', error);
+            return 0;
+        }
+    }
+}
+
+// Vector-based Similarity Strategy
+class VectorSimilarityStrategy extends PoseComparisonStrategy {
+    constructor() {
+        super();
+        this.MIN_CONFIDENCE = 0.04;
+    }
+
+    getName() {
+        return 'vector-similarity';
+    }
+
+    keypointsToObject(keypoints) {
+        const keypointObj = {};
+        keypoints.forEach(point => {
+            if (point.class && point.confidence >= this.MIN_CONFIDENCE) {
+                keypointObj[point.class] = point;
+            }
+        });
+        return keypointObj;
+    }
+
+    // Calculate distance between two points
+    distance(p1, p2) {
+        if (!p1 || !p2) return null;
+        return Math.sqrt(Math.pow(p1.x - p2.x, 2) + Math.pow(p1.y - p2.y, 2));
+    }
+
+    // Calculate angle between three points (in radians)
+    angle(p1, p2, p3) {
+        if (!p1 || !p2 || !p3) return null;
+        
+        const dx1 = p1.x - p2.x;
+        const dy1 = p1.y - p2.y;
+        const dx2 = p3.x - p2.x;
+        const dy2 = p3.y - p2.y;
+        
+        const angle1 = Math.atan2(dy1, dx1);
+        const angle2 = Math.atan2(dy2, dx2);
+        
+        let angle = Math.abs(angle1 - angle2);
+        if (angle > Math.PI) {
+            angle = 2 * Math.PI - angle;
+        }
+        
+        return angle;
+    }
+
+    // Extract feature vector from pose
+    extractFeatureVector(keypointObj) {
+        const features = [];
+        
+        // Joint angles (most important features)
+        const leftArmAngle = this.angle(
+            keypointObj.left_shoulder, 
+            keypointObj.left_elbow, 
+            keypointObj.left_wrist
+        );
+        const rightArmAngle = this.angle(
+            keypointObj.right_shoulder, 
+            keypointObj.right_elbow, 
+            keypointObj.right_wrist
+        );
+        const leftLegAngle = this.angle(
+            keypointObj.left_hip, 
+            keypointObj.left_knee, 
+            keypointObj.left_ankle
+        );
+        const rightLegAngle = this.angle(
+            keypointObj.right_hip, 
+            keypointObj.right_knee, 
+            keypointObj.right_ankle
+        );
+        
+        // Add angles to feature vector (normalized to 0-1)
+        features.push(leftArmAngle ? leftArmAngle / Math.PI : 0);
+        features.push(rightArmAngle ? rightArmAngle / Math.PI : 0);
+        features.push(leftLegAngle ? leftLegAngle / Math.PI : 0);
+        features.push(rightLegAngle ? rightLegAngle / Math.PI : 0);
+        
+        // Body proportions and ratios
+        const shoulderWidth = this.distance(keypointObj.left_shoulder, keypointObj.right_shoulder);
+        const hipWidth = this.distance(keypointObj.left_hip, keypointObj.right_hip);
+        const leftArmLength = this.distance(keypointObj.left_shoulder, keypointObj.left_wrist);
+        const rightArmLength = this.distance(keypointObj.right_shoulder, keypointObj.right_wrist);
+        const leftLegLength = this.distance(keypointObj.left_hip, keypointObj.left_ankle);
+        const rightLegLength = this.distance(keypointObj.right_hip, keypointObj.right_ankle);
+        const torsoLength = this.distance(
+            keypointObj.nose, 
+            keypointObj.left_hip && keypointObj.right_hip ? 
+                { x: (keypointObj.left_hip.x + keypointObj.right_hip.x) / 2,
+                  y: (keypointObj.left_hip.y + keypointObj.right_hip.y) / 2 } : 
+                null
+        );
+        
+        // Normalize limb lengths by shoulder width (scale invariant)
+        const scale = shoulderWidth || 100; // Fallback scale
+        features.push(leftArmLength ? leftArmLength / scale : 0);
+        features.push(rightArmLength ? rightArmLength / scale : 0);
+        features.push(leftLegLength ? leftLegLength / scale : 0);
+        features.push(rightLegLength ? rightLegLength / scale : 0);
+        features.push(torsoLength ? torsoLength / scale : 0);
+        
+        // Body ratios
+        features.push(shoulderWidth && hipWidth ? hipWidth / shoulderWidth : 1);
+        features.push(leftArmLength && rightArmLength ? 
+            Math.min(leftArmLength, rightArmLength) / Math.max(leftArmLength, rightArmLength) : 1);
+        features.push(leftLegLength && rightLegLength ? 
+            Math.min(leftLegLength, rightLegLength) / Math.max(leftLegLength, rightLegLength) : 1);
+        
+        // Shoulder and body tilt angles
+        if (keypointObj.left_shoulder && keypointObj.right_shoulder) {
+            const dx = keypointObj.right_shoulder.x - keypointObj.left_shoulder.x;
+            const dy = keypointObj.right_shoulder.y - keypointObj.left_shoulder.y;
+            features.push(Math.atan2(dy, dx) / Math.PI); // Normalized to -1 to 1
+        } else {
+            features.push(0);
+        }
+        
+        // Head position relative to body center
+        if (keypointObj.nose && keypointObj.left_shoulder && keypointObj.right_shoulder) {
+            const bodyCenter = {
+                x: (keypointObj.left_shoulder.x + keypointObj.right_shoulder.x) / 2,
+                y: (keypointObj.left_shoulder.y + keypointObj.right_shoulder.y) / 2
+            };
+            const headOffset = {
+                x: (keypointObj.nose.x - bodyCenter.x) / scale,
+                y: (keypointObj.nose.y - bodyCenter.y) / scale
+            };
+            features.push(headOffset.x);
+            features.push(headOffset.y);
+        } else {
+            features.push(0, 0);
+        }
+        
+        return features;
+    }
+
+    // Calculate weighted similarity between two vectors
+    weightedVectorSimilarity(vec1, vec2) {
+        if (vec1.length !== vec2.length) return 0;
+        
+        // Define weights for different feature types
+        const featureWeights = [
+            5.0, 5.0, // arm angles (most important)
+            1.5, 1.5, // leg angles
+            2.0, 2.0, 2.0, 2.0, 2.0, // limb lengths
+            1.0, 2.0, 2.0, // body ratios
+            3.0, // shoulder tilt
+            1.0, 1.0  // head position
+        ];
+        
+        let weightedDistance = 0;
+        let totalWeight = 0;
+        
+        for (let i = 0; i < Math.min(vec1.length, featureWeights.length); i++) {
+            const weight = featureWeights[i] || 1.0;
+            const diff = Math.abs(vec1[i] - vec2[i]);
+            
+            // Use exponential penalty for larger differences
+            const penalty = Math.pow(diff, 1.5);
+            weightedDistance += penalty * weight;
+            totalWeight += weight;
+        }
+        
+        if (totalWeight === 0) return 0;
+        
+        const averageDistance = weightedDistance / totalWeight;
+        
+        // Convert to similarity score with more aggressive penalty
+        const maxDistance = 2.0; // Maximum expected difference
+        const similarity = Math.max(0, 100 - (averageDistance / maxDistance) * 100);
+        
+        return similarity;
+    }
+
+    calculatePoseSimilarity(playerKeypoints, targetKeypoints) {
+        if (!playerKeypoints || playerKeypoints.length === 0 || 
+            !targetKeypoints || targetKeypoints.length === 0) {
+            return 0;
+        }
+        
+        try {
+            const playerObj = this.keypointsToObject(playerKeypoints);
+            const targetObj = this.keypointsToObject(targetKeypoints);
+            
+            const playerVector = this.extractFeatureVector(playerObj);
+            const targetVector = this.extractFeatureVector(targetObj);
+            
+            const similarity = this.weightedVectorSimilarity(playerVector, targetVector);
+            
+            return Math.round(Math.max(0, Math.min(100, similarity)));
+            
+        } catch (error) {
+            console.error('Error in VectorSimilarityStrategy:', error);
+            return 0;
+        }
+    }
+}
+
+// Hybrid Strategy combining multiple approaches
+class HybridStrategy extends PoseComparisonStrategy {
+    constructor() {
+        super();
+        this.enhancedStrategy = new EnhancedAngleStrategy();
+        this.alignedStrategy = new AlignedDistanceStrategy();
+        this.vectorStrategy = new VectorSimilarityStrategy();
+        
+        // Configurable weights for combining strategies
+        this.weights = {
+            enhanced: 0.5,    // Primary strategy - well-tested
+            aligned: 0.3,     // Good for position alignment
+            vector: 0.2       // Good for scale invariance
+        };
+        
+        // Minimum difference threshold to trigger fallback logic
+        this.DISAGREEMENT_THRESHOLD = 25; // If strategies differ by more than this, use fallback
+    }
+
+    getName() {
+        return 'hybrid';
+    }
+
+    // Detect if strategies strongly disagree and use fallback logic
+    detectDisagreement(scores) {
+        const values = Object.values(scores);
+        const max = Math.max(...values);
+        const min = Math.min(...values);
+        return (max - min) > this.DISAGREEMENT_THRESHOLD;
+    }
+
+    // Fallback strategy when there's strong disagreement
+    fallbackStrategy(scores, playerKeypoints, targetKeypoints) {
+        // Check data quality first
+        const playerQuality = this.assessDataQuality(playerKeypoints);
+        const targetQuality = this.assessDataQuality(targetKeypoints);
+        
+        // If data quality is poor, favor the aligned distance strategy
+        if (playerQuality < 0.5 || targetQuality < 0.5) {
+            return scores.aligned;
+        }
+        
+        // If good quality data but disagreement, use weighted average with bias toward enhanced
+        return (scores.enhanced * 0.6) + (scores.aligned * 0.25) + (scores.vector * 0.15);
+    }
+
+    // Assess quality of keypoint data
+    assessDataQuality(keypoints) {
+        if (!keypoints || keypoints.length === 0) return 0;
+        
+        const totalConfidence = keypoints.reduce((sum, point) => sum + (point.confidence || 0), 0);
+        const averageConfidence = totalConfidence / keypoints.length;
+        
+        // Count important keypoints (arms and shoulders)
+        const importantKeypoints = ['left_shoulder', 'right_shoulder', 'left_elbow', 'right_elbow', 'left_wrist', 'right_wrist'];
+        const availableImportant = keypoints.filter(point => 
+            importantKeypoints.includes(point.class) && point.confidence > 0.04
+        ).length;
+        
+        const importantRatio = availableImportant / importantKeypoints.length;
+        
+        // Combine confidence and availability
+        return (averageConfidence * 0.6) + (importantRatio * 0.4);
+    }
+
+    calculatePoseSimilarity(playerKeypoints, targetKeypoints) {
+        if (!playerKeypoints || playerKeypoints.length === 0 || 
+            !targetKeypoints || targetKeypoints.length === 0) {
+            return 0;
+        }
+        
+        try {
+            // Run all strategies
+            const scores = {
+                enhanced: this.enhancedStrategy.calculatePoseSimilarity(playerKeypoints, targetKeypoints),
+                aligned: this.alignedStrategy.calculatePoseSimilarity(playerKeypoints, targetKeypoints),
+                vector: this.vectorStrategy.calculatePoseSimilarity(playerKeypoints, targetKeypoints)
+            };
+            
+            // Check for strong disagreement
+            if (this.detectDisagreement(scores)) {
+                const fallbackScore = this.fallbackStrategy(scores, playerKeypoints, targetKeypoints);
+                return Math.round(Math.max(0, Math.min(100, fallbackScore)));
+            }
+            
+            // Normal weighted combination
+            const hybridScore = 
+                (scores.enhanced * this.weights.enhanced) +
+                (scores.aligned * this.weights.aligned) +
+                (scores.vector * this.weights.vector);
+            
+            return Math.round(Math.max(0, Math.min(100, hybridScore)));
+            
+        } catch (error) {
+            console.error('Error in HybridStrategy:', error);
+            // Fallback to enhanced strategy on error
+            return this.enhancedStrategy.calculatePoseSimilarity(playerKeypoints, targetKeypoints);
+        }
+    }
+
+    // Method to adjust weights at runtime if needed
+    setWeights(enhanced, aligned, vector) {
+        // Ensure weights sum to 1
+        const total = enhanced + aligned + vector;
+        if (total > 0) {
+            this.weights.enhanced = enhanced / total;
+            this.weights.aligned = aligned / total;
+            this.weights.vector = vector / total;
+        }
+    }
+}
+
+// Strategy Factory for creating pose comparison instances
+class PoseComparisonFactory {
+    static strategies = {
+        'enhanced-angle': EnhancedAngleStrategy,
+        'aligned-distance': AlignedDistanceStrategy,
+        'vector-similarity': VectorSimilarityStrategy,
+        'hybrid': HybridStrategy
+    };
+    
+    static defaultStrategy = 'enhanced-angle';
+    
+    static create(strategyName = null) {
+        const strategy = strategyName || this.defaultStrategy;
+        const StrategyClass = this.strategies[strategy];
+        
+        if (!StrategyClass) {
+            console.warn(`Unknown pose comparison strategy: ${strategy}. Using default: ${this.defaultStrategy}`);
+            const DefaultStrategyClass = this.strategies[this.defaultStrategy];
+            return new DefaultStrategyClass();
+        }
+        
+        return new StrategyClass();
+    }
+    
+    static getAvailableStrategies() {
+        return Object.keys(this.strategies);
+    }
+    
+    static setDefaultStrategy(strategyName) {
+        if (this.strategies[strategyName]) {
+            this.defaultStrategy = strategyName;
+        } else {
+            console.warn(`Cannot set unknown strategy as default: ${strategyName}`);
+        }
+    }
+}
+
+// Backward compatibility: PoseComparison class that uses factory
+class PoseComparison {
+    constructor(strategyName = null) {
+        this.strategy = PoseComparisonFactory.create(strategyName);
+    }
+    
+    calculatePoseSimilarity(playerKeypoints, targetKeypoints) {
+        return this.strategy.calculatePoseSimilarity(playerKeypoints, targetKeypoints);
+    }
+    
+    getName() {
+        return this.strategy.getName();
+    }
+    
+    // Method to switch strategy at runtime
+    setStrategy(strategyName) {
+        this.strategy = PoseComparisonFactory.create(strategyName);
     }
 }
 

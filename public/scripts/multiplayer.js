@@ -54,10 +54,12 @@ class MultiplayerManager {
 
     /**
      * Create a new multiplayer room
+     * @param {string} hostNickname - The nickname of the host
+     * @param {string} customRoomName - Optional custom room name
      */
-    async createRoom(hostNickname) {
+    async createRoom(hostNickname, customRoomName = null) {
         try {
-            const roomCode = this.generateRoomCode();
+            const roomCode = customRoomName ? `room-${customRoomName}` : this.generateRoomCode();
             const playerId = this.generatePlayerId();
             
             // Create room document
@@ -200,6 +202,67 @@ class MultiplayerManager {
             console.error('Error submitting result:', error);
             return { success: false, error: error.message };
         }
+    }
+
+    /**
+     * Update room state (e.g., start game)
+     */
+    async updateRoomState(newState) {
+        if (!this.currentRoom) {
+            throw new Error('Not in a room');
+        }
+
+        try {
+            const roomRef = this.doc(this.db, 'rooms', this.currentRoom);
+            await this.updateDoc(roomRef, {
+                state: newState,
+                startTime: newState === 'playing' ? new Date() : null
+            });
+
+            console.log(`Room state updated to: ${newState}`);
+            return { success: true };
+
+        } catch (error) {
+            console.error('Error updating room state:', error);
+            return { success: false, error: error.message };
+        }
+    }
+
+    /**
+     * Listen for room state changes
+     */
+    listenForRoomChanges(callback) {
+        if (!this.currentRoom) return;
+
+        const roomRef = this.doc(this.db, 'rooms', this.currentRoom);
+        const unsubscribe = this.onSnapshot(roomRef, (doc) => {
+            if (doc.exists()) {
+                const roomData = doc.data();
+                callback(roomData);
+            }
+        });
+
+        this.roomListeners.push(unsubscribe);
+        return unsubscribe;
+    }
+
+    /**
+     * Listen for player changes in the room
+     */
+    listenForPlayerChanges(callback) {
+        if (!this.currentRoom) return;
+
+        const playersRef = this.collection(this.db, 'rooms', this.currentRoom, 'players');
+        const unsubscribe = this.onSnapshot(playersRef, (snapshot) => {
+            const players = [];
+            snapshot.forEach((doc) => {
+                players.push({ id: doc.id, ...doc.data() });
+            });
+            callback(players);
+        });
+
+        this.roomListeners.push(unsubscribe);
+        return unsubscribe;
     }
 
     /**
