@@ -22,5 +22,13 @@ service cloud.firestore {
       allow read: if true;
       allow write: if false; // Only server can update stats
     }
+    
+    // Allow read/write access to test collection for Firebase testing
+    match /test-collection/{document} {
+      allow create: if true; // Allow anyone to create test documents
+      allow read: if true;   // Allow anyone to read test documents
+      allow update: if false; // Prevent test document updates
+      allow delete: if false; // Prevent test document deletion
+    }
   }
 }

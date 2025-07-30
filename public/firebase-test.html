@@ -82,36 +82,36 @@
         <div id="results"></div>
     </div>
 
-    <!-- Firebase SDKs -->
-    <script type="module">
-        // Firebase configuration - REPLACE WITH YOUR ACTUAL CONFIG
-        const firebaseConfig = {
-            // You need to replace these with your actual Firebase project config
-            apiKey: "your-api-key-here",
-            authDomain: "your-project-id.firebaseapp.com", 
-            projectId: "your-project-id",
-            storageBucket: "your-project-id.appspot.com",
-            messagingSenderId: "your-sender-id",
-            appId: "your-app-id"
-        };
-
-        // Import Firebase functions
-        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
-        import { getFirestore, collection, addDoc, getDocs, doc, deleteDoc, query, orderBy, limit } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
-
-        // Initialize Firebase
+    <!-- Firebase Configuration -->
+    <script type="module" src="scripts/firebase-config.js"></script>
+    
+    <!-- Firebase Test Logic -->
+    <script>
+        // Wait for firebase-config.js to load and initialize
         let app, db;
         
-        try {
-            app = initializeApp(firebaseConfig);
-            db = getFirestore(app);
-            updateStatus('🔥 Firebase initialized successfully!', 'success');
-            document.getElementById('writeTest').disabled = false;
-            document.getElementById('readTest').disabled = false;
-        } catch (error) {
-            updateStatus('❌ Firebase initialization failed: ' + error.message, 'error');
-            console.error('Firebase init error:', error);
+        function initializeFirebaseTest() {
+            try {
+                if (window.firebase && window.firebase.app && window.firebase.db) {
+                    app = window.firebase.app;
+                    db = window.firebase.db;
+                    updateStatus('🔥 Firebase initialized successfully!', 'success');
+                    document.getElementById('writeTest').disabled = false;
+                    document.getElementById('readTest').disabled = false;
+                } else {
+                    // Retry after a short delay if firebase isn't ready yet
+                    setTimeout(initializeFirebaseTest, 100);
+                }
+            } catch (error) {
+                updateStatus('❌ Firebase initialization failed: ' + error.message, 'error');
+                console.error('Firebase init error:', error);
+            }
         }
+        
+        // Initialize when page loads with fallback timing
+        window.addEventListener('load', () => {
+            setTimeout(initializeFirebaseTest, 50);
+        });
 
         // Make functions available globally
         window.writeTestData = async function() {
@@ -131,7 +131,7 @@
                     userAgent: navigator.userAgent.substring(0, 50) + '...'
                 };
 
-                const docRef = await addDoc(collection(db, 'test-collection'), testData);
+                const docRef = await window.firebase.addDoc(window.firebase.collection(db, 'test-collection'), testData);
                 
                 updateStatus(`✅ Test data written successfully! Document ID: ${docRef.id}`, 'success');
                 
@@ -157,13 +157,13 @@
             updateStatus('📖 Reading test data...', 'info');
             
             try {
-                const q = query(
-                    collection(db, 'test-collection'), 
-                    orderBy('timestamp', 'desc'), 
-                    limit(5)
+                const q = window.firebase.query(
+                    window.firebase.collection(db, 'test-collection'), 
+                    window.firebase.orderBy('timestamp', 'desc'), 
+                    window.firebase.limit(5)
                 );
                 
-                const querySnapshot = await getDocs(q);
+                const querySnapshot = await window.firebase.getDocs(q);
                 
                 if (querySnapshot.empty) {
                     updateStatus('📭 No test data found. Try writing some first!', 'info');
