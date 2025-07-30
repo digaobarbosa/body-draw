@@ -49,7 +49,7 @@ class MultiplayerManager {
      * Generate unique player ID
      */
     generatePlayerId() {
-        return 'player_' + Math.random().toString(36).substr(2, 9);
+        return 'player_' + Math.random().toString(36).substring(2, 11);
     }
 
     /**
@@ -235,12 +235,18 @@ class MultiplayerManager {
         if (!this.currentRoom) return;
 
         const roomRef = this.doc(this.db, 'rooms', this.currentRoom);
-        const unsubscribe = this.onSnapshot(roomRef, (doc) => {
-            if (doc.exists()) {
-                const roomData = doc.data();
-                callback(roomData);
+        const unsubscribe = this.onSnapshot(roomRef, 
+            (doc) => {
+                if (doc.exists()) {
+                    const roomData = doc.data();
+                    callback(roomData);
+                }
+            },
+            (error) => {
+                console.error('Room listener error:', error);
+                // Could implement retry logic here if needed
             }
-        });
+        );
 
         this.roomListeners.push(unsubscribe);
         return unsubscribe;
@@ -253,13 +259,19 @@ class MultiplayerManager {
         if (!this.currentRoom) return;
 
         const playersRef = this.collection(this.db, 'rooms', this.currentRoom, 'players');
-        const unsubscribe = this.onSnapshot(playersRef, (snapshot) => {
-            const players = [];
-            snapshot.forEach((doc) => {
-                players.push({ id: doc.id, ...doc.data() });
-            });
-            callback(players);
-        });
+        const unsubscribe = this.onSnapshot(playersRef, 
+            (snapshot) => {
+                const players = [];
+                snapshot.forEach((doc) => {
+                    players.push({ id: doc.id, ...doc.data() });
+                });
+                callback(players);
+            },
+            (error) => {
+                console.error('Player listener error:', error);
+                // Could implement retry logic here if needed
+            }
+        );
 
         this.roomListeners.push(unsubscribe);
         return unsubscribe;

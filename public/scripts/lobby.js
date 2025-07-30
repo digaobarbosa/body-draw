@@ -353,65 +353,68 @@ class LobbyController {
     }
 
     /**
-     * Update players list (admin view)
+     * Create a player card element
      */
-    updateAdminPlayersList(players = null) {
-        // Use real Firebase data if available, otherwise fallback to mock
-        const playerList = players || [
-            { nickname: 'Admin', isHost: true, connectionStatus: 'connected' }
-        ];
+    createPlayerCard(player) {
+        const playerCard = document.createElement('div');
+        playerCard.className = 'player-card';
         
-        this.playersList.innerHTML = '';
-        
-        playerList.forEach(player => {
-            const playerCard = document.createElement('div');
-            playerCard.className = 'player-card';
-            
-            playerCard.innerHTML = `
-                <div class="player-info">
-                    <div class="player-avatar">${player.nickname.charAt(0).toUpperCase()}</div>
-                    <div>
-                        <div class="player-name">${player.nickname}</div>
-                        ${player.isHost ? '<span class="player-host">HOST</span>' : ''}
-                    </div>
-                </div>
-                <div class="connection-status ${player.connectionStatus === 'connected' ? 'connected' : ''}">●</div>
-            `;
-            
-            this.playersList.appendChild(playerCard);
-        });
-        
-        this.playerCount.textContent = playerList.length;
-    }
-
-    /**
-     * Update players list (player lobby view)
-     */
-    updatePlayerLobbyList(players = null) {
-        // Use real Firebase data if available, otherwise fallback to mock
-        const playerList = players || [
-            { nickname: this.username || 'You', connectionStatus: 'connected' }
-        ];
-        
-        this.lobbyPlayersList.innerHTML = '';
-        
-        playerList.forEach(player => {
-            const playerCard = document.createElement('div');
-            playerCard.className = 'player-card';
-            
-            playerCard.innerHTML = `
-                <div class="player-info">
-                    <div class="player-avatar">${player.nickname.charAt(0).toUpperCase()}</div>
+        playerCard.innerHTML = `
+            <div class="player-info">
+                <div class="player-avatar">${player.nickname.charAt(0).toUpperCase()}</div>
+                <div>
                     <div class="player-name">${player.nickname}</div>
                     ${player.isHost ? '<span class="player-host">HOST</span>' : ''}
                 </div>
-                <div class="connection-status ${player.connectionStatus === 'connected' ? 'connected' : ''}">●</div>
-            `;
-            
-            this.lobbyPlayersList.appendChild(playerCard);
+            </div>
+            <div class="connection-status ${player.connectionStatus === 'connected' ? 'connected' : ''}">●</div>
+        `;
+        
+        return playerCard;
+    }
+
+    /**
+     * Update players list (unified method for both admin and player views)
+     */
+    updatePlayersList(players = null, isAdmin = false) {
+        // Use real Firebase data if available, otherwise fallback to mock
+        const playerList = players || this.getMockPlayers(isAdmin);
+        const listElement = isAdmin ? this.playersList : this.lobbyPlayersList;
+        const countElement = isAdmin ? this.playerCount : this.lobbyPlayerCount;
+        
+        listElement.innerHTML = '';
+        
+        playerList.forEach(player => {
+            const playerCard = this.createPlayerCard(player);
+            listElement.appendChild(playerCard);
         });
         
-        this.lobbyPlayerCount.textContent = playerList.length;
+        countElement.textContent = playerList.length;
+    }
+
+    /**
+     * Get mock player data for fallback
+     */
+    getMockPlayers(isAdmin) {
+        if (isAdmin) {
+            return [{ nickname: 'Admin', isHost: true, connectionStatus: 'connected' }];
+        } else {
+            return [{ nickname: this.username || 'You', connectionStatus: 'connected' }];
+        }
+    }
+
+    /**
+     * Update players list (admin view) - simplified wrapper
+     */
+    updateAdminPlayersList(players = null) {
+        this.updatePlayersList(players, true);
+    }
+
+    /**
+     * Update players list (player lobby view) - simplified wrapper
+     */
+    updatePlayerLobbyList(players = null) {
+        this.updatePlayersList(players, false);
     }
 
     /**
@@ -486,5 +489,12 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
     
-    new LobbyController();
+    const lobbyController = new LobbyController();
+    
+    // Clean up on page unload to prevent memory leaks
+    window.addEventListener('beforeunload', () => {
+        if (lobbyController && lobbyController.multiplayer) {
+            lobbyController.multiplayer.cleanup();
+        }
+    });
 });
