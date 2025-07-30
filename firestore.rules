@@ -30,5 +30,29 @@ service cloud.firestore {
       allow update: if false; // Prevent test document updates
       allow delete: if false; // Prevent test document deletion
     }
+    
+    // Allow read/write access to multiplayer rooms
+    match /rooms/{roomId} {
+      allow create: if roomId.matches('^room-[a-z]+$'); // Only allow room-[animal] format
+      allow read: if true;   // Allow anyone to read room info
+      allow update: if true; // Allow room state updates
+      allow delete: if false; // Prevent room deletion
+    }
+    
+    // Allow read/write access to players in rooms
+    match /rooms/{roomId}/players/{playerId} {
+      allow create: if true; // Allow anyone to join rooms
+      allow read: if true;   // Allow reading player list
+      allow update: if true; // Allow player state updates
+      allow delete: if true; // Allow players to leave
+    }
+    
+    // Allow read/write access to game results
+    match /rooms/{roomId}/results/{resultId} {
+      allow create: if true; // Allow result submission
+      allow read: if true;   // Allow reading results for leaderboard
+      allow update: if false; // Prevent result updates (immutable)
+      allow delete: if false; // Prevent result deletion
+    }
   }
 }

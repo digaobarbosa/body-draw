@@ -3,6 +3,7 @@ class PoseMatchingGame {
         this.camera = new CameraManager();
         this.roboflow = new RoboflowAPI();
         this.poses = new TargetPoses();
+        this.multiplayer = null; // Will be initialized when Firebase loads
         
         this.gameState = {
             isPlaying: false,
@@ -462,6 +463,16 @@ document.addEventListener('DOMContentLoaded', async () => {
     
     // Initialize camera immediately on page load
     await game.camera.initialize();
+    
+    // Initialize multiplayer when Firebase is ready
+    setTimeout(() => {
+        if (window.MultiplayerManager && window.firebase) {
+            game.multiplayer = new MultiplayerManager();
+            console.log('Multiplayer manager initialized');
+        } else {
+            console.warn('Firebase or MultiplayerManager not available');
+        }
+    }, 1000); // Give Firebase time to load
     
     // Don't load target pose until game starts
     

@@ -10,7 +10,22 @@ const firebaseConfig = {
 
 // Initialize Firebase
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
-import { getFirestore, collection, addDoc, getDocs, query, orderBy, limit } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+import { 
+  getFirestore, 
+  collection, 
+  addDoc, 
+  getDocs, 
+  doc,
+  setDoc,
+  updateDoc,
+  deleteDoc,
+  query, 
+  where,
+  orderBy, 
+  limit,
+  onSnapshot,
+  serverTimestamp 
+} from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
 const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
@@ -22,7 +37,14 @@ window.firebase = {
   collection,
   addDoc,
   getDocs,
+  doc,
+  setDoc,
+  updateDoc,
+  deleteDoc,
   query,
+  where,
   orderBy,
-  limit
+  limit,
+  onSnapshot,
+  serverTimestamp
 };
