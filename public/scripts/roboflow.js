@@ -1,11 +1,15 @@
 class RoboflowAPI {
     constructor() {
-        this.apiUrl = 'https://serverless.roboflow.com';
-        this.apiKey = 'SLt1HjDiKA4nAQcHml4K';
-        this.workspaceName = 'rodrigo-xn5xn';
-        this.workflowId = 'keypoints-test';
+        // Use Firebase Function endpoint instead of direct Roboflow API
+        this.functionUrl = this.getFunctionUrl();
         this.cache = new Map();
         this.cacheTimeout = 15 * 60 * 1000; // 15 minutes
+    }
+
+    getFunctionUrl() {
+        // Use the same domain as the hosting with /api/ prefix
+        // This works both in development and production via Firebase Hosting rewrites
+        return '/api/detectPose';
     }
 
     async detectPose(imageBase64, thickness = 10) {
@@ -20,24 +24,21 @@ class RoboflowAPI {
                 }
                 this.cache.delete(cacheKey);
             }
-            const url = `https://serverless.roboflow.com/infer/workflows/${this.workspaceName}/${this.workflowId}`;
-            //const url = `http://localhost:9001/infer/workflows/${this.workspaceName}/${this.workflowId}`;
-            const response = await fetch(url, {
+
+            // Call Firebase Function instead of direct Roboflow API
+            const response = await fetch(this.functionUrl, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json'
                 },
                 body: JSON.stringify({
-                    api_key: this.apiKey,
-                    inputs: {
-                        "image": {"type": "base64", "value": imageBase64},
-                        "thickness": thickness
-                    }
+                    imageBase64: imageBase64,
+                    thickness: thickness
                 })
             });
 
             if (!response.ok) {
-                throw new Error(`API request failed: ${response.status} ${response.statusText}`);
+                throw new Error(`Firebase Function request failed: ${response.status} ${response.statusText}`);
             }
 
             const result = await response.json();
@@ -158,14 +159,14 @@ class RoboflowAPI {
             ctx.fillStyle = 'black';
             ctx.fillRect(0, 0, 1, 1);
             
-            const testImage = testCanvas.toDataURL('image/jpeg');
+            const testImage = testCanvas.toDataURL('image/jpeg').split(',')[1]; // Remove data:image/jpeg;base64, prefix
             
             const response = await this.detectPose(testImage, 10);
-            console.log('API connection test successful:', response);
+            console.log('Firebase Function connection test successful:', response);
             return true;
             
         } catch (error) {
-            console.error('API connection test failed:', error);
+            console.error('Firebase Function connection test failed:', error);
             return false;
         }
     }

@@ -5,13 +5,15 @@
   "main": "index.html",
   "scripts": {
     "dev": "cd public && python3 -m http.server 3001",
-    "dev:firebase": "firebase serve --only hosting",
+    "dev:firebase": "firebase emulators:start --only hosting,functions",
     "build": "echo \"Static site - no build step needed\"",
     "preview": "python3 -m http.server 8080",
     "test": "jest",
     "test:watch": "jest --watch",
     "precalculate-images": "node scripts/preprocess-targets.js",
-    "deploy": "firebase deploy --only hosting"
+    "deploy": "firebase deploy",
+    "deploy:functions": "firebase deploy --only functions",
+    "deploy:hosting": "firebase deploy --only hosting"
   },
   "keywords": [
     "game",

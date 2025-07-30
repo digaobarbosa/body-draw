@@ -4,11 +4,25 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Development Commands
 
-- `npm run dev` - Start local development server (Python HTTP server on port 3000)
+### Firebase Development (Recommended)
+- `npm run dev:firebase` - Start Firebase emulators (hosting + functions) on port 5000
+- `npm run deploy` - Deploy both hosting and functions to Firebase
+- `npm run deploy:functions` - Deploy only Firebase Functions
+- `npm run deploy:hosting` - Deploy only Firebase Hosting
+
+### Legacy Development
+- `npm run dev` - Start simple Python HTTP server on port 3001 (no functions)
 - `npm run preview` - Preview production build locally (port 8080)
+
+### Testing
 - `npm test` - Run Jest tests
 - `npm test:watch` - Run Jest tests in watch mode
 - `npm test -- --testNamePattern="pattern"` - Run specific test by name pattern
+
+### Firebase Emulators
+- Hosting: http://localhost:5000
+- Functions: http://localhost:5001
+- Emulator UI: http://localhost:4000
 
 ## Core Architecture
 
@@ -16,7 +30,7 @@ This is a real-time pose matching game using webcam input and Roboflow's YOLOv8m
 
 ### Class Orchestration Pattern
 
-**PoseMatchingGame** (scripts/game.js) - Central orchestrator that:
+**PoseMatchingGame** (public/scripts/game.js) - Central orchestrator that:
 - Manages game state phases: `idle` → `preparing` → `matching` → `results`
 - Coordinates between CameraManager, RoboflowAPI, and TargetPoses instances
 - Handles timer-based game loop with 7-second matching phases
@@ -26,7 +40,7 @@ This is a real-time pose matching game using webcam input and Roboflow's YOLOv8m
 
 ### Enhanced Pose Comparison System
 
-**PoseComparison** (scripts/pose-comparison.js) - Advanced angle-based pose matching:
+**PoseComparison** (public/scripts/pose-comparison.js) - Advanced angle-based pose matching:
 - Uses **weighted angle comparison** (80%) + position similarity (20%)
 - **Selective keypoint filtering**: Only nose (not eyes/ears), averaged hip positions
 - **Confidence threshold**: 0.04 (lowered to include more arm keypoints)
@@ -37,15 +51,22 @@ This is a real-time pose matching game using webcam input and Roboflow's YOLOv8m
 
 ### API Configuration
 
-**RoboflowAPI** (scripts/roboflow.js):
-- **Development**: Points to `localhost:9001` (local Roboflow server)
-- **Production**: Should use `https://serverless.roboflow.com`
-- **Workflow**: `rodrigo-xn5xn/keypoints-test`
+**RoboflowAPI** (public/scripts/roboflow.js):
+- **Secure Implementation**: Calls Firebase Function at `/api/detectPose`
+- **Development**: Firebase emulators handle routing via firebase.json rewrites
+- **Production**: Firebase Hosting routes `/api/*` to Cloud Functions
+- **Security**: API key stored server-side, never exposed to frontend
 - **Cache**: 15-minute memory cache for API responses
+
+**Firebase Function** (functions/index.js):
+- **Endpoint**: `/api/detectPose` (via URL rewrite)
+- **Environment**: API key stored in `/functions/.env` (dev) or Firebase parameters (prod)
+- **Workflow**: `rodrigo-xn5xn/keypoints-test`
+- **Security**: Validates requests and forwards to `https://serverless.roboflow.com`
 
 ### Target Pose System
 
-**TargetPoses** (scripts/poses.js):
+**TargetPoses** (public/scripts/poses.js):
 - Manages 4 predefined poses: tpose, celebration, pointing, sitting
 - **Two-phase loading**: 1) Load image display, 2) Process with Roboflow API for keypoints
 - **Keypoint extraction**: Target poses must be processed through Roboflow API before player comparison can work
@@ -97,7 +118,9 @@ npm test -- --testNamePattern="bad poses"
 
 ## File Dependencies
 
-- **index.html**: Must include pose-comparison.js before poses.js
+- **public/index.html**: Must include pose-comparison.js before poses.js
+- **firebase.json**: Configures hosting rewrites `/api/**` → Firebase Functions
+- **functions/**: Contains secure API proxy with environment variables
 - **jest.config.js**: Configured for Node.js environment, tests in tests/ directory
-- **styles/main.css**: Uses CSS Grid with camera/detection views side-by-side
-- **assets/targets/**: Contains target pose reference images (1.webp, 2.png, 3.png)
+- **public/styles/main.css**: Uses CSS Grid with camera/detection views side-by-side
+- **public/assets/targets/**: Contains target pose reference images (1.webp, 2.png, 3.png)
