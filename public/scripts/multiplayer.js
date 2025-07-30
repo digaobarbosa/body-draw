@@ -384,13 +384,18 @@ class MultiplayerManager {
         }
 
         try {
+            console.log('Getting player statuses for room:', this.currentRoom);
+            
             const playersSnapshot = await this.getDocs(
                 this.collection(this.db, 'rooms', this.currentRoom, 'playerResults')
             );
             
+            console.log('Player results snapshot size:', playersSnapshot.size);
+            
             const statuses = [];
             playersSnapshot.forEach((doc) => {
                 const data = doc.data();
+                console.log('Player result document:', doc.id, data);
                 statuses.push({
                     playerId: data.playerId,
                     nickname: data.nickname,
@@ -399,6 +404,7 @@ class MultiplayerManager {
                 });
             });
 
+            console.log('Final player statuses:', statuses);
             return statuses;
 
         } catch (error) {

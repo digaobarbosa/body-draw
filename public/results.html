@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Game Results - Body Draw</title>
+    <link rel="stylesheet" href="styles/main.css">
+    <link rel="stylesheet" href="styles/results.css">
+</head>
+<body>
+    <div class="results-container">
+        <header>
+            <h1>🏆 Game Results</h1>
+            <p id="roomInfo">Room: Loading...</p>
+        </header>
+
+        <div class="leaderboard-section">
+            <h2>Final Leaderboard</h2>
+            <div id="leaderboard" class="leaderboard">
+                <!-- Leaderboard will be populated here -->
+                <div class="loading-message">
+                    <div class="loading-spinner"></div>
+                    <p>Loading results...</p>
+                </div>
+            </div>
+        </div>
+
+        <div class="detailed-scores">
+            <h3>Detailed Scores</h3>
+            <div id="detailedScores" class="detailed-scores-grid">
+                <!-- Detailed scores will be populated here -->
+            </div>
+        </div>
+
+        <!-- Error Screen -->
+        <div id="errorScreen" class="error-screen" style="display: none;">
+            <div class="error-card">
+                <h3>❌ Error Loading Results</h3>
+                <p id="errorMessage">Unable to load game results. Please try refreshing the page.</p>
+                <button id="retryBtn">Retry</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Scripts -->
+    <script type="module" src="scripts/firebase-config.js"></script>
+    <script src="scripts/multiplayer.js"></script>
+    <script src="scripts/results.js"></script>
+</body>
+</html>

@@ -584,15 +584,29 @@ class PoseMatchingGame {
         // Submit score to Firebase if in multiplayer mode
         if (this.isMultiplayer && this.multiplayer) {
             try {
-                await this.multiplayer.submitPlayerResult(
+                console.log('Submitting score to Firebase:', {
+                    poseIndex: this.gameState.currentPoseIndex,
+                    score: poseScore,
+                    nickname: this.multiplayer.playerNickname,
+                    roomId: this.multiplayer.currentRoom
+                });
+                
+                const result = await this.multiplayer.submitPlayerResult(
                     this.gameState.currentPoseIndex, 
                     poseScore, 
                     this.multiplayer.playerNickname || 'Player'
                 );
-                console.log(`Score submitted to Firebase: ${poseScore}% for pose ${this.gameState.currentPoseIndex}`);
+                
+                if (result.success) {
+                    console.log(`✅ Score submitted to Firebase: ${poseScore}% for pose ${this.gameState.currentPoseIndex}`);
+                } else {
+                    console.error(`❌ Failed to submit score: ${result.error}`);
+                }
             } catch (error) {
-                console.error('Error submitting score to Firebase:', error);
+                console.error('❌ Error submitting score to Firebase:', error);
             }
+        } else {
+            console.log('Not submitting score - isMultiplayer:', this.isMultiplayer, 'multiplayer object:', !!this.multiplayer);
         }
         
         // Check if there are more poses to play
@@ -640,15 +654,33 @@ class PoseMatchingGame {
         } else {
             // All poses completed
             if (this.isMultiplayer && this.multiplayer) {
-                // Mark player as done in Firebase
+                // Mark player as done in Firebase and wait for all requests to complete
                 try {
+                    console.log('Finalizing game - marking player as done...');
                     await this.multiplayer.submitPlayerResult(
                         -1, // Special index to indicate game completion
                         0,  // No score for completion marker
                         this.multiplayer.playerNickname || 'Player'
                     );
+                    console.log('✅ Player marked as done in Firebase');
+                    
+                    // Add a small delay to ensure all Firebase requests are processed
+                    console.log('Waiting for Firebase requests to complete...');
+                    await new Promise(resolve => setTimeout(resolve, 1000));
+                    
+                    // Redirect to results page instead of showing in-game results
+                    // Pass room and username as URL parameters as backup to session storage
+                    const username = this.multiplayer.playerNickname || 'Player';
+                    console.log('Redirecting to results page...');
+                    window.location.href = `results.html?room=${this.roomId}&username=${encodeURIComponent(username)}`;
+                    return;
+                    
                 } catch (error) {
-                    console.error('Error marking player as done:', error);
+                    console.error('❌ Error finalizing game in Firebase:', error);
+                    // Still redirect even if final submission fails
+                    const username = this.multiplayer.playerNickname || 'Player';
+                    window.location.href = `results.html?room=${this.roomId}&username=${encodeURIComponent(username)}`;
+                    return;
                 }
             }
             
@@ -897,6 +929,26 @@ document.addEventListener('DOMContentLoaded', async () => {
                 // Connect to the room specified in URL
                 if (game.roomId) {
                     game.multiplayer.currentRoom = game.roomId;
+                    
+                    // Get player info from session storage
+                    const playerId = sessionStorage.getItem('playerId');
+                    const username = sessionStorage.getItem('username');
+                    
+                    if (playerId && username) {
+                        game.multiplayer.playerId = playerId;
+                        game.multiplayer.playerNickname = username;
+                        console.log('Multiplayer initialized:', {
+                            room: game.roomId,
+                            playerId: playerId,
+                            nickname: username
+                        });
+                    } else {
+                        console.warn('Missing session storage data for multiplayer:', {
+                            playerId: playerId,
+                            username: username
+                        });
+                    }
+                    
                     console.log('Multiplayer game initialized for room:', game.roomId);
                 }
             } else {
