@@ -930,9 +930,24 @@ document.addEventListener('DOMContentLoaded', async () => {
                 if (game.roomId) {
                     game.multiplayer.currentRoom = game.roomId;
                     
-                    // Get player info from session storage
-                    const playerId = sessionStorage.getItem('playerId');
-                    const username = sessionStorage.getItem('username');
+                    // Get player info from session storage or URL params
+                    let playerId = sessionStorage.getItem('playerId');
+                    let username = sessionStorage.getItem('username');
+                    
+                    // For admin, try to get from URL params if session storage is empty
+                    if (game.isAdmin && (!playerId || !username)) {
+                        playerId = game.urlParams.get('playerId') || `admin_${Date.now()}`;
+                        username = game.urlParams.get('username') || 'Admin';
+                        
+                        // Store in session for consistency
+                        sessionStorage.setItem('playerId', playerId);
+                        sessionStorage.setItem('username', username);
+                        
+                        console.log('Admin multiplayer data generated:', {
+                            playerId: playerId,
+                            username: username
+                        });
+                    }
                     
                     if (playerId && username) {
                         game.multiplayer.playerId = playerId;

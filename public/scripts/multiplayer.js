@@ -325,7 +325,19 @@ class MultiplayerManager {
      * Submit player result for current pose
      */
     async submitPlayerResult(poseIndex, accuracy, nickname) {
+        console.log('submitPlayerResult called with:', {
+            poseIndex,
+            accuracy,
+            nickname,
+            currentRoom: this.currentRoom,
+            playerId: this.playerId
+        });
+        
         if (!this.currentRoom || !this.playerId) {
+            console.error('Missing required data for submitPlayerResult:', {
+                currentRoom: this.currentRoom,
+                playerId: this.playerId
+            });
             throw new Error('Not in a room');
         }
 

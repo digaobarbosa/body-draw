@@ -2,6 +2,20 @@
  * Results Page Controller - Displays final game scores and leaderboard
  */
 
+class Logger {
+    static isDebugEnabled = window.location.hostname === 'localhost' || window.localStorage.getItem('debug') === 'true';
+    
+    static debug(message, data = null) {
+        if (this.isDebugEnabled) {
+            console.log(`[Results] ${message}`, data || '');
+        }
+    }
+    
+    static error(message, error = null) {
+        console.error(`[Results] ${message}`, error || '');
+    }
+}
+
 class ResultsController {
     constructor() {
         this.multiplayer = null;
@@ -23,30 +37,33 @@ class ResultsController {
      * Load player and room data from session storage
      */
     loadSessionData() {
-        console.log('All sessionStorage keys:', Object.keys(sessionStorage));
-        console.log('sessionStorage roomId:', sessionStorage.getItem('roomId'));
-        console.log('sessionStorage playerId:', sessionStorage.getItem('playerId'));
-        console.log('sessionStorage username:', sessionStorage.getItem('username'));
+        const sessionData = {
+            roomId: sessionStorage.getItem('roomId'),
+            playerId: sessionStorage.getItem('playerId'),
+            username: sessionStorage.getItem('username')
+        };
         
-        this.roomId = sessionStorage.getItem('roomId');
-        this.playerId = sessionStorage.getItem('playerId');
-        this.username = sessionStorage.getItem('username');
+        Logger.debug('Session data loaded', sessionData);
+        
+        this.roomId = sessionData.roomId;
+        this.playerId = sessionData.playerId;
+        this.username = sessionData.username;
         
         // If session storage is empty, try to get from URL as fallback
         if (!this.roomId || !this.username) {
             const urlParams = new URLSearchParams(window.location.search);
             if (!this.roomId) {
                 this.roomId = urlParams.get('room');
-                console.log('Fallback roomId from URL:', this.roomId);
+                Logger.debug('Using fallback roomId from URL', this.roomId);
             }
             if (!this.username) {
                 this.username = urlParams.get('username');
-                console.log('Fallback username from URL:', this.username);
+                Logger.debug('Using fallback username from URL', this.username);
             }
         }
         
         if (!this.roomId || !this.playerId) {
-            console.log('Missing session data - roomId:', this.roomId, 'playerId:', this.playerId);
+            Logger.debug('Missing session data', { roomId: this.roomId, playerId: this.playerId });
             this.showError('Session data missing. Please complete a multiplayer game first.');
             return;
         }
@@ -87,7 +104,7 @@ class ResultsController {
                 this.multiplayer.playerId = this.playerId;
                 this.multiplayer.playerNickname = this.username;
                 
-                console.log('Results controller initialized with Firebase');
+                Logger.debug('Results controller initialized with Firebase');
                 this.loadResults();
             } else {
                 setTimeout(checkMultiplayer, 500);
@@ -101,62 +118,66 @@ class ResultsController {
      */
     async loadResults() {
         try {
-            console.log('Loading results for room:', this.roomId);
-            console.log('Player ID:', this.playerId);
-            console.log('Username:', this.username);
+            Logger.debug('Loading results', { roomId: this.roomId, playerId: this.playerId, username: this.username });
             
-            // Get all player results from Firebase - bypassing the currentRoom check
-            this.multiplayer.currentRoom = this.roomId; // Set the room ID so getPlayerStatuses works
-            const playerStatuses = await this.multiplayer.getPlayerStatuses();
-            console.log('Player statuses from Firebase:', playerStatuses);
-            
-            if (playerStatuses.length === 0) {
-                console.log('No player statuses found, checking if room exists...');
-                
-                // Try to check if room exists at all
-                const roomQuery = this.multiplayer.query(
-                    this.multiplayer.collection(this.multiplayer.db, 'rooms'),
-                    this.multiplayer.where('roomId', '==', this.roomId)
-                );
-                const roomSnapshot = await this.multiplayer.getDocs(roomQuery);
-                
-                if (roomSnapshot.empty) {
-                    this.showError('Room not found. The game may not have been completed yet.');
-                } else {
-                    console.log('Room exists but no playerResults. Checking what collections exist...');
-                    
-                    // Let's also check if there are any players in the regular players collection
-                    const playersQuery = this.multiplayer.query(
-                        this.multiplayer.collection(this.multiplayer.db, 'rooms', this.roomId, 'players')
-                    );
-                    const playersSnapshot = await this.multiplayer.getDocs(playersQuery);
-                    console.log('Regular players collection size:', playersSnapshot.size);
-                    
-                    playersSnapshot.forEach((doc) => {
-                        console.log('Player document:', doc.id, doc.data());
-                    });
-                    
-                    this.showError('No game results found. Players may still be playing or no scores were recorded.');
-                }
-                return;
-            }
+            const playerStatuses = await this.validateAndLoadResults();
+            if (!playerStatuses) return; // Error already handled in validation
             
             // Process and display results
             this.displayLeaderboard(playerStatuses);
             this.displayDetailedScores(playerStatuses);
             
         } catch (error) {
-            console.error('Error loading results:', error);
+            Logger.error('Failed to load game results', error);
             this.showError(`Failed to load game results: ${error.message}`);
         }
     }
 
     /**
-     * Display the main leaderboard
+     * Validate room and load player results
      */
-    displayLeaderboard(playerStatuses) {
-        // Calculate totals and create leaderboard
-        const leaderboard = playerStatuses.map(player => {
+    async validateAndLoadResults() {
+        // Set up multiplayer connection
+        this.multiplayer.currentRoom = this.roomId;
+        
+        // Get player results
+        const playerStatuses = await this.multiplayer.getPlayerStatuses();
+        Logger.debug('Player statuses from Firebase', playerStatuses);
+        
+        if (playerStatuses.length === 0) {
+            const roomExists = await this.checkRoomExists();
+            const errorMessage = roomExists 
+                ? 'No game results found. Players may still be playing or no scores were recorded.'
+                : 'Room not found. The game may not have been completed yet.';
+            this.showError(errorMessage);
+            return null;
+        }
+        
+        return playerStatuses;
+    }
+
+    /**
+     * Check if the room exists in Firebase
+     */
+    async checkRoomExists() {
+        try {
+            const roomQuery = this.multiplayer.query(
+                this.multiplayer.collection(this.multiplayer.db, 'rooms'),
+                this.multiplayer.where('roomId', '==', this.roomId)
+            );
+            const roomSnapshot = await this.multiplayer.getDocs(roomQuery);
+            return !roomSnapshot.empty;
+        } catch (error) {
+            Logger.error('Error checking room existence', error);
+            return false;
+        }
+    }
+
+    /**
+     * Transform and sort player data for display
+     */
+    processPlayerData(playerStatuses) {
+        return playerStatuses.map(player => {
             const scores = player.scores || [];
             const total = scores.reduce((sum, score) => sum + (score || 0), 0);
             const average = scores.length > 0 ? Math.round(total / scores.length) : 0;
@@ -168,12 +189,17 @@ class ResultsController {
                 scores: scores,
                 isCurrentPlayer: player.playerId === this.playerId
             };
-        }).sort((a, b) => b.total - a.total); // Sort by total score descending
+        }).sort((a, b) => b.total - a.total);
+    }
 
-        // Clear loading message
+    /**
+     * Display the main leaderboard
+     */
+    displayLeaderboard(playerStatuses) {
+        const leaderboard = this.processPlayerData(playerStatuses);
+
+        // Clear loading message and create leaderboard items
         this.leaderboard.innerHTML = '';
-
-        // Create leaderboard items
         leaderboard.forEach((player, index) => {
             const rank = index + 1;
             const leaderboardItem = this.createLeaderboardItem(player, rank);
@@ -182,24 +208,36 @@ class ResultsController {
     }
 
     /**
+     * DOM creation utilities
+     */
+    createElement(tag, className, innerHTML = '') {
+        const element = document.createElement(tag);
+        if (className) element.className = className;
+        if (innerHTML) element.innerHTML = innerHTML;
+        return element;
+    }
+
+    applyCurrentPlayerStyling(element) {
+        element.style.background = 'rgba(76, 175, 80, 0.2)';
+        element.style.border = '1px solid #4caf50';
+    }
+
+    getRankingDisplay(rank) {
+        const medals = { 1: '🥇', 2: '🥈', 3: '🥉' };
+        return medals[rank] || `#${rank}`;
+    }
+
+    /**
      * Create a leaderboard item element
      */
     createLeaderboardItem(player, rank) {
-        const item = document.createElement('div');
-        item.className = `leaderboard-item rank-${rank <= 3 ? rank : ''}`;
+        const item = this.createElement('div', `leaderboard-item rank-${rank <= 3 ? rank : ''}`);
         
-        // Add highlight for current player
         if (player.isCurrentPlayer) {
-            item.style.background = 'rgba(76, 175, 80, 0.2)';
-            item.style.border = '1px solid #4caf50';
+            this.applyCurrentPlayerStyling(item);
         }
         
-        // Get medal emoji
-        let medal = '';
-        if (rank === 1) medal = '🥇';
-        else if (rank === 2) medal = '🥈';
-        else if (rank === 3) medal = '🥉';
-        else medal = `#${rank}`;
+        const medal = this.getRankingDisplay(rank);
         
         item.innerHTML = `
             <div class="player-info">
@@ -224,24 +262,10 @@ class ResultsController {
     displayDetailedScores(playerStatuses) {
         // Define pose names (should match game.js poseQueue)
         const poseNames = ['T-Pose', 'Arms Up', 'Pointing'];
-        
-        // Sort players by total score
-        const sortedPlayers = playerStatuses.map(player => {
-            const scores = player.scores || [];
-            const total = scores.reduce((sum, score) => sum + (score || 0), 0);
-            
-            return {
-                nickname: player.nickname || 'Unknown',
-                total: Math.round(total),
-                scores: scores,
-                isCurrentPlayer: player.playerId === this.playerId
-            };
-        }).sort((a, b) => b.total - a.total);
+        const sortedPlayers = this.processPlayerData(playerStatuses);
 
-        // Clear existing content
+        // Clear existing content and create detailed cards
         this.detailedScores.innerHTML = '';
-
-        // Create detailed cards for each player
         sortedPlayers.forEach(player => {
             const card = this.createDetailedScoreCard(player, poseNames);
             this.detailedScores.appendChild(card);
@@ -252,37 +276,38 @@ class ResultsController {
      * Create a detailed score card for a player
      */
     createDetailedScoreCard(player, poseNames) {
-        const card = document.createElement('div');
-        card.className = 'player-detailed-card';
+        const card = this.createElement('div', 'player-detailed-card');
         
         // Add highlight for current player
         if (player.isCurrentPlayer) {
-            card.style.border = '1px solid #4caf50';
+            this.applyCurrentPlayerStyling(card);
         }
         
-        // Create pose score items
-        const poseScoreItems = poseNames.map((poseName, index) => {
-            const score = player.scores[index] || 0;
-            return `
-                <div class="pose-score-item">
-                    <div class="pose-name">${poseName}</div>
-                    <div class="pose-score">${Math.round(score)}%</div>
-                </div>
-            `;
-        }).join('');
+        // Create header
+        const header = this.createElement('div', 'player-detailed-header');
+        const nameDiv = this.createElement('div', 'player-detailed-name', 
+            `${player.nickname}${player.isCurrentPlayer ? ' (You)' : ''}`);
+        const totalDiv = this.createElement('div', 'player-detailed-total', `Total: ${player.total}%`);
         
-        card.innerHTML = `
-            <div class="player-detailed-header">
-                <div class="player-detailed-name">
-                    ${player.nickname}
-                    ${player.isCurrentPlayer ? ' (You)' : ''}
-                </div>
-                <div class="player-detailed-total">Total: ${player.total}%</div>
-            </div>
-            <div class="pose-scores">
-                ${poseScoreItems}
-            </div>
-        `;
+        header.appendChild(nameDiv);
+        header.appendChild(totalDiv);
+        
+        // Create pose scores container
+        const poseScoresContainer = this.createElement('div', 'pose-scores');
+        
+        poseNames.forEach((poseName, index) => {
+            const score = player.scores[index] || 0;
+            const poseItem = this.createElement('div', 'pose-score-item');
+            const poseNameDiv = this.createElement('div', 'pose-name', poseName);
+            const poseScoreDiv = this.createElement('div', 'pose-score', `${Math.round(score)}%`);
+            
+            poseItem.appendChild(poseNameDiv);
+            poseItem.appendChild(poseScoreDiv);
+            poseScoresContainer.appendChild(poseItem);
+        });
+        
+        card.appendChild(header);
+        card.appendChild(poseScoresContainer);
         
         return card;
     }
