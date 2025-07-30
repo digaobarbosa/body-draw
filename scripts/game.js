@@ -130,7 +130,7 @@ class PoseMatchingGame {
         this.gameState.phase = 'matching';
         this.gameState.timeRemaining = 7; // Changed to 7 seconds
         
-        // Clear the visualization canvas so player can't see previous attempts
+        // Switch to live video view for the matching phase
         this.poses.clearVisualization();
         
         this.updateStatus('Strike your pose! Hold it for 7 seconds.');

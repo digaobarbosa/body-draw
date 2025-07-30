@@ -16,6 +16,10 @@ class CameraManager {
             });
             
             this.video.srcObject = this.stream;
+            
+            // Start playing the video
+            await this.video.play();
+            
             this.isActive = true;
             console.log('Camera initialized successfully');
             return true;
