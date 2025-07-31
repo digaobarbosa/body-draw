@@ -40,6 +40,21 @@ class TargetPoses {
                 description: 'Great run!',
                 image: 'assets/targets/usain-bolt.jpg'
             },
+            old1: {
+                name: 'T-Pose',
+                description: 'Stand with arms extended horizontally',
+                image: 'assets/targets/1.webp'
+            },
+            old2: {
+                name: 'Arms Up',
+                description: 'Raise both arms up in celebration',
+                image: 'assets/targets/2.png'
+            },
+            old3: {
+                name: 'Pointing',
+                description: 'Point with one arm extended',
+                image: 'assets/targets/3.png'
+            }
         };
     }
 

@@ -33,7 +33,7 @@ class PoseMatchingGame {
         this.THICKNESS = 10;
 
         // Define the sequence of poses to play through
-        this.poseQueue = ['one', 'two', 'three', 'four'];
+        this.poseQueue = this.isMultiplayer ? ['one', 'two', 'three', 'four'] : ['old1', 'old2', 'old3'];
 
         this.elements = {
             startButton: document.getElementById('startGame'),
