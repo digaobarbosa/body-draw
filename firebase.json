@@ -56,10 +56,10 @@
   },
   "emulators": {
     "hosting": {
-      "port": 5000
+      "port": 5100
     },
     "functions": {
-      "port": 5001
+      "port": 5101
     },
     "firestore": {
       "port": 8080
