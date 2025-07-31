@@ -31,7 +31,7 @@ exports.detectPose = onRequest({
     }
 
     // Forward the request to Roboflow API
-    const roboflowUrl = "https://serverless.roboflow.com/infer/workflows/rodrigo-xn5xn/keypoints-test";
+    const roboflowUrl = "https://serverless.roboflow.com/infer/workflows/rodrigo-xn5xn/keypoints-test-2";
     
     const response = await fetch(roboflowUrl, {
       method: "POST",

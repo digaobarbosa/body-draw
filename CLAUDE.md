@@ -23,6 +23,10 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 - Hosting: http://localhost:5000
 - Functions: http://localhost:5001
 - Emulator UI: http://localhost:4000
+- **Note**: The firebase emulator runs on port 5100
+
+## Development Tips
+- Always check if firebase emulator is running before starting it. You can check if port 5100 is being used.
 
 ## Core Architecture
 

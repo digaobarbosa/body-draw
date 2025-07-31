@@ -59,14 +59,74 @@ class RoboflowAPI {
 
     extractKeypoints(apiResponse) {
         try {
-            // Based on the sample API response structure
+            console.log('=== EXTRACTKEYPOINTS CALLED ===');
+            console.log('API Response structure:', apiResponse ? Object.keys(apiResponse) : 'null');
+            
+            // New API structure: keypoint_predictions.predictions[0].keypoints
+            if (apiResponse && apiResponse.keypoint_predictions && 
+                apiResponse.keypoint_predictions.predictions &&
+                apiResponse.keypoint_predictions.predictions.length > 0) {
+                
+                const prediction = apiResponse.keypoint_predictions.predictions[0];
+                if (prediction && prediction.keypoints) {
+                    console.log('🎯 DEBUG: Found keypoints in direct structure:', prediction.keypoints.length);
+                    return prediction.keypoints.map(kp => ({
+                        x: kp.x,
+                        y: kp.y,
+                        confidence: kp.confidence || 1.0,
+                        class: kp.class
+                    }));
+                }
+            }
+
+            // Handle outputs structure which might contain new or old format
             if (apiResponse && apiResponse.outputs && apiResponse.outputs.length > 0) {
                 const output = apiResponse.outputs[0];
+                console.log('🔍 ROBOFLOW DEBUG: Found outputs[0], keys:', Object.keys(output));
                 
-                // Check for keypoints in model_predictions structure
+                // Check if outputs[0] contains new API structure
+                if (output.keypoint_predictions && 
+                    output.keypoint_predictions.predictions &&
+                    output.keypoint_predictions.predictions.length > 0) {
+                    
+                    console.log('🔍 ROBOFLOW DEBUG: Found keypoint_predictions.predictions:', output.keypoint_predictions.predictions.length);
+                    const prediction = output.keypoint_predictions.predictions[0];
+                    if (prediction && prediction.keypoints) {
+                        console.log('🎯 ROBOFLOW DEBUG: SUCCESS! Found keypoints:', prediction.keypoints.length);
+                        return prediction.keypoints.map(kp => ({
+                            x: kp.x,
+                            y: kp.y,
+                            confidence: kp.confidence || 1.0,
+                            class: kp.class
+                        }));
+                    } else {
+                        console.log('❌ ROBOFLOW DEBUG: prediction exists but no keypoints');
+                    }
+                } else {
+                    console.log('❌ ROBOFLOW DEBUG: No keypoint_predictions found in outputs[0]');
+                }
+                
+                // Check for direct predictions structure (current keypoints.json format)
+                if (output.predictions && output.predictions.length > 0) {
+                    console.log('🔍 DEBUG: Found direct predictions:', output.predictions.length);
+                    const prediction = output.predictions[0];
+                    if (prediction && prediction.keypoints) {
+                        console.log('🎯 DEBUG: Found keypoints in direct predictions structure:', prediction.keypoints.length);
+                        return prediction.keypoints.map(kp => ({
+                            x: kp.x,
+                            y: kp.y,
+                            confidence: kp.confidence || 1.0,
+                            class: kp.class
+                        }));
+                    }
+                } else {
+                    console.log('⚠️ DEBUG: No direct predictions found in outputs[0]');
+                }
+                
+                // Check for keypoints in model_predictions structure (old format)
                 if (output.model_predictions && output.model_predictions.predictions) {
                     const prediction = output.model_predictions.predictions;
-                    if (prediction && prediction[0].keypoints) {
+                    if (prediction && prediction[0] && prediction[0].keypoints) {
                         return prediction[0].keypoints.map(kp => ({
                             x: kp.x,
                             y: kp.y,
@@ -76,12 +136,13 @@ class RoboflowAPI {
                     }
                 }
 
-                // Look for keypoints directly in output
+                // Look for keypoints directly in output (old format)
                 if (output.keypoints) {
                     return output.keypoints.map(kp => ({
                         x: kp.x,
                         y: kp.y,
-                        confidence: kp.confidence || 1.0
+                        confidence: kp.confidence || 1.0,
+                        class: kp.class
                     }));
                 }
             }
@@ -105,10 +166,20 @@ class RoboflowAPI {
 
     extractVisualizationImage(apiResponse) {
         try {
-            // Extract the keypoint visualization from the API response
+            // Current API structure: outputs[0].visualization.value
             if (apiResponse && apiResponse.outputs && apiResponse.outputs.length > 0) {
                 const output = apiResponse.outputs[0];
                 
+                if (output.visualization && output.visualization.value) {
+                    // Remove the data:image/jpeg;base64, prefix if present
+                    let base64Data = output.visualization.value;
+                    if (base64Data.startsWith('data:image/')) {
+                        base64Data = base64Data.split(',')[1];
+                    }
+                    return base64Data;
+                }
+                
+                // Legacy fallback for keypoint_visualization structure
                 if (output.keypoint_visualization && output.keypoint_visualization.value) {
                     // Remove the data:image/jpeg;base64, prefix if present
                     let base64Data = output.keypoint_visualization.value;
@@ -117,6 +188,19 @@ class RoboflowAPI {
                     }
                     return base64Data;
                 }
+            }
+
+            // Fallback for keypoint_predictions.visualizations structure
+            if (apiResponse && apiResponse.keypoint_predictions && 
+                apiResponse.keypoint_predictions.visualizations &&
+                apiResponse.keypoint_predictions.visualizations.length > 0) {
+                
+                let base64Data = apiResponse.keypoint_predictions.visualizations[0];
+                // Remove the data:image/jpeg;base64, prefix if present
+                if (base64Data.startsWith('data:image/')) {
+                    base64Data = base64Data.split(',')[1];
+                }
+                return base64Data;
             }
             
             return null;
@@ -141,6 +225,24 @@ class RoboflowAPI {
         } catch (error) {
             console.error('Error processing target image:', error);
             throw error;
+        }
+    }
+
+    extractHandPredictions(apiResponse) {
+        try {
+            // New API structure: hand_predictions.predictions[0]
+            if (apiResponse && apiResponse.hand_predictions && 
+                apiResponse.hand_predictions.predictions &&
+                apiResponse.hand_predictions.predictions.length > 0) {
+                
+                return apiResponse.hand_predictions.predictions[0];
+            }
+            
+            return null;
+            
+        } catch (error) {
+            console.error('Error extracting hand predictions:', error);
+            return null;
         }
     }
 

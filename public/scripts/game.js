@@ -489,8 +489,9 @@ class PoseMatchingGame {
             }
             
             if (keypoints.length > 0) {
-                // Calculate final accuracy
-                const accuracy = this.poses.calculatePoseSimilarity(keypoints);
+                // Calculate final accuracy using hand-aware algorithm
+                // Use the full API response for better comparison
+                const accuracy = this.poses.calculateHandAwareSimilarity(result, 0.1); // 10% hand weight by default
                 this.gameState.currentAccuracy = Math.round(accuracy);
                 this.gameState.bestAccuracy = Math.round(accuracy); // Single shot, so current = best
                 

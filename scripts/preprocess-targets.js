@@ -3,11 +3,11 @@
 const fs = require('fs');
 const path = require('path');
 
-// Import the RoboflowAPI class from the existing file
-const { RoboflowAPI } = require('./roboflow.js');
+// Import the Node.js-compatible RoboflowAPI class
+const { RoboflowAPI } = require('./roboflow-node.js');
 
 // Configuration
-const ASSETS_DIR = path.join(__dirname, '..', 'assets', 'targets');
+const ASSETS_DIR = path.join(__dirname, '..', 'public', 'assets', 'targets');
 const OUTPUT_FILE = path.join(ASSETS_DIR, 'keypoints.json');
 const THICKNESS = 10; // Constant thickness value
 
@@ -86,9 +86,17 @@ async function main() {
     // Show summary
     console.log('\nSummary:');
     for (const [filename, data] of Object.entries(results)) {
-        const hasKeypoints = data?.outputs?.[0]?.model_predictions?.predictions?.[0]?.keypoints;
+        // New API structure: keypoint_predictions.predictions[0].keypoints
+        const hasKeypoints = data?.keypoint_predictions?.predictions?.[0]?.keypoints;
         const keypointCount = hasKeypoints ? hasKeypoints.length : 0;
         console.log(`  ${filename}: ${keypointCount} keypoints detected`);
+        
+        // Also show hand predictions if available
+        const hasHands = data?.hand_predictions?.predictions;
+        const handCount = hasHands ? hasHands.length : 0;
+        if (handCount > 0) {
+            console.log(`  ${filename}: ${handCount} hand predictions detected`);
+        }
     }
 }
 

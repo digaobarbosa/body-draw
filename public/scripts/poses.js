@@ -1,3 +1,5 @@
+console.log('🚨 POSES.JS LOADED - FILE UPDATED! 🚨');
+
 class TargetPoses {
     constructor() {
         this.canvas = document.getElementById('targetCanvas');
@@ -10,6 +12,7 @@ class TargetPoses {
         this.currentTargetImage = null;
         this.roboflow = null; // Will be injected from game.js
         this.preloadedKeypoints = null; // Will store cached keypoints data
+        this.targetPhotoResult = null; // Store full API response for hand-aware comparison
         
         // Try to load pre-calculated keypoints on initialization
         this.loadPreCalculatedKeypoints();
@@ -159,8 +162,17 @@ class TargetPoses {
             
             const cachedResult = this.preloadedKeypoints[filename];
             
+            // Store the full API response for hand-aware comparison
+            this.targetPhotoResult = cachedResult;
+            console.log('✅ Stored pre-calculated full API response for hand-aware comparison');
+            
             // Extract keypoints using the same logic as RoboflowAPI
+            console.log('🔍 SIMPLE DEBUG: About to extract keypoints from cached result');
+            console.log('🔍 DEBUG: this.roboflow exists?', !!this.roboflow);
+            console.log('🔍 DEBUG: this.roboflow.extractKeypoints exists?', this.roboflow && typeof this.roboflow.extractKeypoints === 'function');
+            
             const keypoints = this.roboflow ? this.roboflow.extractKeypoints(cachedResult) : [];
+            console.log('🔍 DEBUG: extractKeypoints returned:', keypoints.length, 'keypoints');
             if (keypoints.length > 0) {
                 this.targetKeypoints = keypoints;
                 console.log(`✅ Pre-calculated keypoints loaded: ${this.targetKeypoints.length} keypoints`);
@@ -192,6 +204,12 @@ class TargetPoses {
             console.log('Calling Roboflow API for target image...');
             // Call Roboflow API
             const result = await this.roboflow.processTargetImage(base64Image, 10);
+            
+            // Store the full API response for hand-aware comparison
+            if (result.rawResponse) {
+                this.targetPhotoResult = result.rawResponse;
+                console.log('✅ Stored full target API response for hand-aware comparison');
+            }
             
             if (result.keypoints && result.keypoints.length > 0) {
                 // Store the keypoints for comparison
@@ -236,13 +254,20 @@ class TargetPoses {
     }
 
     displayVisualization(base64Image) {
+        console.log('🖼️ displayVisualization called with image:', !!base64Image);
+        console.log('🖼️ Image data length:', base64Image ? base64Image.length : 0);
+        
         this.displayBase64ImageOnCanvas(base64Image, this.resultCtx, this.resultCanvas, () => {
+            console.log('🖼️ Image loaded, switching video to result canvas');
             // Hide video and show result canvas after image loads
             const video = document.getElementById('webcam');
             const resultCanvas = document.getElementById('resultCanvas');
             if (video && resultCanvas) {
                 video.style.display = 'none';
                 resultCanvas.style.display = 'block';
+                console.log('✅ Successfully switched to result canvas');
+            } else {
+                console.log('🚫 Could not find video or result canvas elements');
             }
         });
     }
@@ -279,6 +304,10 @@ class TargetPoses {
         return this.targetKeypoints;
     }
 
+    getTargetPhotoResult() {
+        return this.targetPhotoResult;
+    }
+
     // Calculate similarity between player pose and target pose using enhanced algorithm
     calculatePoseSimilarity(playerKeypoints) {
         // Add detailed logging for debugging pose comparison issues
@@ -307,6 +336,73 @@ class TargetPoses {
             console.log('⚠️ PoseComparison not available, using fallback algorithm');
             return this.calculateSimpleDistanceSimilarity(playerKeypoints);
         }
+    }
+
+    // Calculate similarity using hand-aware algorithm with full API responses
+    calculateHandAwareSimilarity(playerPhotoResult, handWeight = 0.1, excludedKeypoints = []) {
+        console.log('🔍 calculateHandAwareSimilarity called with:', {
+            playerPhotoResult: !!playerPhotoResult,
+            targetPhotoResult: !!this.targetPhotoResult,
+            handWeight,
+            excludedKeypoints
+        });
+        
+        if (!playerPhotoResult || !this.targetPhotoResult) {
+            console.log('🚫 Missing photo results for hand-aware comparison');
+            console.log('Player result:', !!playerPhotoResult);
+            console.log('Target result:', !!this.targetPhotoResult);
+            return 0;
+        }
+
+        console.log('🔍 Checking PoseComparison availability:', typeof PoseComparison !== 'undefined');
+        
+        if (typeof PoseComparison !== 'undefined') {
+            console.log('🔍 Creating PoseComparison with hand-aware-angle strategy');
+            const poseComparison = new PoseComparison('hand-aware-angle');
+            const handAwareStrategy = poseComparison.strategy;
+            
+            console.log('🔍 Strategy created:', !!handAwareStrategy);
+            console.log('🔍 calculateSimilarity method available:', typeof handAwareStrategy.calculateSimilarity === 'function');
+            
+            if (handAwareStrategy && typeof handAwareStrategy.calculateSimilarity === 'function') {
+                console.log('🔍 Calling handAwareStrategy.calculateSimilarity with:', {
+                    targetResult: !!this.targetPhotoResult,
+                    playerResult: !!playerPhotoResult,
+                    handWeight,
+                    excludedKeypoints
+                });
+                
+                const similarity = handAwareStrategy.calculateSimilarity(
+                    this.targetPhotoResult,
+                    playerPhotoResult,
+                    handWeight,
+                    excludedKeypoints
+                );
+                console.log(`📊 Hand-aware pose similarity: ${similarity}% (hand weight: ${handWeight})`);
+                return similarity;
+            } else {
+                console.log('🚫 handAwareStrategy or calculateSimilarity method not available');
+            }
+        } else {
+            console.log('🚫 PoseComparison not available globally');
+        }
+        
+        // Fallback to regular pose comparison if hand-aware not available
+        console.log('⚠️ Hand-aware comparison not available, falling back to regular comparison');
+        const playerKeypoints = this.extractKeypoints(playerPhotoResult);
+        return this.calculatePoseSimilarity(playerKeypoints);
+    }
+
+    // Helper method to extract keypoints from photo result
+    extractKeypoints(photoResult) {
+        if (!photoResult || !photoResult.keypoint_predictions || 
+            !photoResult.keypoint_predictions.predictions ||
+            !photoResult.keypoint_predictions.predictions.length) {
+            return [];
+        }
+
+        const prediction = photoResult.keypoint_predictions.predictions[0];
+        return prediction.keypoints || [];
     }
 
     // Fallback simple distance-based comparison
