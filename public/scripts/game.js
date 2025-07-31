@@ -19,7 +19,7 @@ class PoseMatchingGame {
         this.gameState = {
             isPlaying: false,
             isPreparing: false,
-            timeRemaining: 7,
+            timeRemaining: 5,
             score: 0,
             currentAccuracy: 0,
             bestAccuracy: 0,
@@ -33,7 +33,7 @@ class PoseMatchingGame {
         this.THICKNESS = 10;
 
         // Define the sequence of poses to play through
-        this.poseQueue = ['tpose', 'celebration', 'pointing'];
+        this.poseQueue = ['one', 'two', 'three', 'four'];
 
         this.elements = {
             startButton: document.getElementById('startGame'),
@@ -424,7 +424,7 @@ class PoseMatchingGame {
 
     startMatchingPhase() {
         this.gameState.phase = 'matching';
-        this.gameState.timeRemaining = 7; // Changed to 7 seconds
+        this.gameState.timeRemaining = 5; // Changed to 5 seconds
         
         // Switch to live video view for the matching phase
         this.poses.clearVisualization();

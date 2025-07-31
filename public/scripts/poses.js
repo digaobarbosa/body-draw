@@ -13,26 +13,32 @@ class TargetPoses {
         this.roboflow = null; // Will be injected from game.js
         this.preloadedKeypoints = null; // Will store cached keypoints data
         this.targetPhotoResult = null; // Store full API response for hand-aware comparison
+        this.targetVisualization = null; // Store target visualization for results display
         
         // Try to load pre-calculated keypoints on initialization
         this.loadPreCalculatedKeypoints();
         
         // Define available poses - all use 1.webp for now
         this.poses = {
-            tpose: {
-                name: 'T-Pose',
-                description: 'Stand with arms extended horizontally',
-                image: 'assets/targets/1.webp'
+            one: {
+                name: 'Stretching',
+                description: 'Stretch your arms up',
+                image: 'assets/targets/1preguica.jpg'
             },
-            celebration: {
-                name: 'Arms Up',
-                description: 'Raise both arms up in celebration',
-                image: 'assets/targets/2.png'
+            two: {
+                name: 'Man thinking',
+                description: 'Think about your life',
+                image: 'assets/targets/man-thinking.png'
             },
-            pointing: {
-                name: 'Pointing',
-                description: 'Point with one arm extended',
-                image: 'assets/targets/3.png'
+            three: {
+                name: 'Racoon woman working',
+                description: 'Work hard',
+                image: 'assets/targets/racoon-woman.png'
+            },
+            four: {
+                name: 'Usain Bolt',
+                description: 'Great run!',
+                image: 'assets/targets/usain-bolt.jpg'
             },
         };
     }
@@ -180,11 +186,11 @@ class TargetPoses {
                 console.warn('⚠️ No keypoints found in pre-calculated data');
             }
 
-            // Extract and display visualization
+            // Extract and store visualization for later use
             const visualization = this.roboflow ? this.roboflow.extractVisualizationImage(cachedResult) : null;
             if (visualization) {
-                this.displayVisualizationOnTarget(visualization);
-                console.log('✅ Target image replaced with pre-calculated visualization');
+                this.targetVisualization = visualization;
+                console.log('✅ Target visualization stored for results display');
             }
             
             return;
@@ -221,9 +227,9 @@ class TargetPoses {
             }
 
             if (result.visualization) {
-                // Replace the target canvas with the API visualization
-                this.displayVisualizationOnTarget(result.visualization);
-                console.log('✅ Target image replaced with API visualization');
+                // Store the target visualization for results display
+                this.targetVisualization = result.visualization;
+                console.log('✅ Target visualization stored for results display');
             } else {
                 console.warn('⚠️ No visualization received from API');
             }
@@ -257,8 +263,9 @@ class TargetPoses {
         console.log('🖼️ displayVisualization called with image:', !!base64Image);
         console.log('🖼️ Image data length:', base64Image ? base64Image.length : 0);
         
+        // Display player visualization on result canvas
         this.displayBase64ImageOnCanvas(base64Image, this.resultCtx, this.resultCanvas, () => {
-            console.log('🖼️ Image loaded, switching video to result canvas');
+            console.log('🖼️ Player visualization loaded, switching video to result canvas');
             // Hide video and show result canvas after image loads
             const video = document.getElementById('webcam');
             const resultCanvas = document.getElementById('resultCanvas');
@@ -270,6 +277,12 @@ class TargetPoses {
                 console.log('🚫 Could not find video or result canvas elements');
             }
         });
+        
+        // Also display target visualization with keypoints on target canvas
+        if (this.targetVisualization) {
+            console.log('🖼️ Displaying target visualization with keypoints');
+            this.displayVisualizationOnTarget(this.targetVisualization);
+        }
     }
 
     displayBase64ImageOnCanvas(base64Image, ctx, canvas, onLoad) {

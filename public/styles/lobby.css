@@ -365,6 +365,46 @@
     margin-top: 20px;
 }
 
+/* Tips Section */
+.tips-section {
+    background: rgba(255, 255, 255, 0.05);
+    border-radius: 12px;
+    padding: 25px;
+    margin-bottom: 30px;
+    border: 1px solid rgba(255, 255, 255, 0.15);
+}
+
+.tips-section h3 {
+    margin-bottom: 15px;
+    color: white;
+    font-size: 1.3rem;
+    text-align: center;
+}
+
+.tips-list {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    text-align: left;
+    max-width: 400px;
+    margin: 0 auto;
+}
+
+.tips-list li {
+    color: rgba(255, 255, 255, 0.9);
+    padding: 8px 0;
+    padding-left: 20px;
+    position: relative;
+    line-height: 1.4;
+}
+
+.tips-list li::before {
+    content: "💡";
+    position: absolute;
+    left: 0;
+    top: 8px;
+}
+
 .waiting-message h3 {
     margin-bottom: 10px;
     color: white;
