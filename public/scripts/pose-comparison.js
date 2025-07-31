@@ -207,7 +207,7 @@ class HandAwareAngleStrategy extends PoseComparisonStrategy {
                     playerObj.left_elbow,
                     playerObj.left_shoulder
                 ),
-                weight: 0.15
+                weight: 0.2
             },
             {
                 name: 'right_arm',
@@ -221,7 +221,7 @@ class HandAwareAngleStrategy extends PoseComparisonStrategy {
                     playerObj.right_elbow,
                     playerObj.right_shoulder
                 ),
-                weight: 0.15
+                weight: 0.2
             }
         ];
 
@@ -238,7 +238,7 @@ class HandAwareAngleStrategy extends PoseComparisonStrategy {
         if (headTiltTarget !== null && headTiltPlayer !== null) {
             const headScore = this.angleToSimilarity(Math.abs(headTiltTarget - headTiltPlayer));
             totalWeightedScore += headScore * 0.2;
-            totalWeight += 0.2;
+            totalWeight += 0.1;
         }
 
         // 3. Shoulder angle to horizontal (10% weight)
@@ -269,7 +269,7 @@ class HandAwareAngleStrategy extends PoseComparisonStrategy {
                     playerObj.right_shoulder,
                     playerObj.right_hip
                 ),
-                weight: 0.1
+                weight: 0.07
             },
             {
                 name: 'left_body',
@@ -281,7 +281,7 @@ class HandAwareAngleStrategy extends PoseComparisonStrategy {
                     playerObj.left_shoulder,
                     playerObj.left_hip
                 ),
-                weight: 0.1
+                weight: 0.07
             }
         ];
 
