@@ -27,6 +27,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Development Tips
 - Always check if firebase emulator is running before starting it. You can check if port 5100 is being used.
+- Firebase hosting is served on port 5100
 
 ## Core Architecture
 

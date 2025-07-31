@@ -6,7 +6,7 @@ describe('HandAwareAngleStrategy', () => {
     let handAwareStrategy;
     
     beforeEach(() => {
-        handAwareStrategy = new PoseComparison('hand-aware-angle').strategy;
+        handAwareStrategy = new PoseComparison();
     });
 
     test('should calculate similarity with hand detection', () => {
@@ -167,7 +167,7 @@ describe('HandAwareAngleStrategy', () => {
 
 describe('HandAwareAngleStrategy Weight Distribution', () => {
     test('should demonstrate all weight components match specification', () => {
-        const strategy = new PoseComparison('hand-aware-angle').strategy;
+        const strategy = new PoseComparison();
         
         console.log('\n=== HAND-AWARE ANGLE STRATEGY WEIGHT DISTRIBUTION ===\n');
         console.log('Angle Components (90% total when handWeight=0.1):');

@@ -19,27 +19,6 @@ class HandAwareAngleStrategy extends PoseComparisonStrategy {
     constructor() {
         super();
         this.MIN_CONFIDENCE = 0.04;
-        
-        // Define keypoint indices for COCO pose format
-        this.KEYPOINT_INDICES = {
-            nose: 0,
-            left_eye: 1,
-            right_eye: 2,
-            left_ear: 3,
-            right_ear: 4,
-            left_shoulder: 5,
-            right_shoulder: 6,
-            left_elbow: 7,
-            right_elbow: 8,
-            left_wrist: 9,
-            right_wrist: 10,
-            left_hip: 11,
-            right_hip: 12,
-            left_knee: 13,
-            right_knee: 14,
-            left_ankle: 15,
-            right_ankle: 16
-        };
     }
 
     getName() {
@@ -446,84 +425,27 @@ class HandAwareAngleStrategy extends PoseComparisonStrategy {
      * Legacy method for backward compatibility with PoseComparison interface
      */
     calculatePoseSimilarity(playerKeypoints, targetKeypoints) {
-        // Create minimal photo result objects for backward compatibility
-        const targetPhotoResult = {
-            keypoint_predictions: {
-                predictions: [{
-                    keypoints: targetKeypoints
-                }]
-            },
-            hand_predictions: {
-                predictions: []
-            }
-        };
-
-        const playerPhotoResult = {
-            keypoint_predictions: {
-                predictions: [{
-                    keypoints: playerKeypoints
-                }]
-            },
-            hand_predictions: {
-                predictions: []
-            }
-        };
-
-        return this.calculateSimilarity(targetPhotoResult, playerPhotoResult);
+        // Direct calculation without creating fake API response objects
+        const angleSimilarity = this.calculateAngleBasedSimilarity(
+            targetKeypoints, 
+            playerKeypoints, 
+            []  // excludedKeypoints
+        );
+        
+        // No hands in legacy format, so hand similarity is neutral (50%)
+        // Using default handWeight of 0.1
+        const handWeight = 0.1;
+        const angleWeight = 1 - handWeight;
+        const totalScore = (angleSimilarity * angleWeight) + (50 * handWeight);
+        
+        return Math.round(Math.max(0, Math.min(100, totalScore)));
     }
 }
 
-// Strategy Factory for creating pose comparison instances
-class PoseComparisonFactory {
-    static strategies = {
-        'hand-aware-angle': HandAwareAngleStrategy
-    };
-    
-    static defaultStrategy = 'hand-aware-angle';
-    
-    static create(strategyName = null) {
-        const strategy = strategyName || this.defaultStrategy;
-        const StrategyClass = this.strategies[strategy];
-        
-        if (!StrategyClass) {
-            console.warn(`Unknown pose comparison strategy: ${strategy}. Using default: ${this.defaultStrategy}`);
-            const DefaultStrategyClass = this.strategies[this.defaultStrategy];
-            return new DefaultStrategyClass();
-        }
-        
-        return new StrategyClass();
-    }
-    
-    static getAvailableStrategies() {
-        return Object.keys(this.strategies);
-    }
-    
-    static setDefaultStrategy(strategyName) {
-        if (this.strategies[strategyName]) {
-            this.defaultStrategy = strategyName;
-        } else {
-            console.warn(`Cannot set unknown strategy as default: ${strategyName}`);
-        }
-    }
-}
-
-// Backward compatibility: PoseComparison class that uses factory
-class PoseComparison {
-    constructor(strategyName = null) {
-        this.strategy = PoseComparisonFactory.create(strategyName);
-    }
-    
-    calculatePoseSimilarity(playerKeypoints, targetKeypoints) {
-        return this.strategy.calculatePoseSimilarity(playerKeypoints, targetKeypoints);
-    }
-    
-    getName() {
-        return this.strategy.getName();
-    }
-    
-    // Method to switch strategy at runtime
-    setStrategy(strategyName) {
-        this.strategy = PoseComparisonFactory.create(strategyName);
+// PoseComparison class - simplified without factory pattern
+class PoseComparison extends HandAwareAngleStrategy {
+    constructor() {
+        super();
     }
 }
 

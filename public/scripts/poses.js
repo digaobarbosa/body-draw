@@ -357,22 +357,21 @@ class TargetPoses {
         console.log('🔍 Checking PoseComparison availability:', typeof PoseComparison !== 'undefined');
         
         if (typeof PoseComparison !== 'undefined') {
-            console.log('🔍 Creating PoseComparison with hand-aware-angle strategy');
-            const poseComparison = new PoseComparison('hand-aware-angle');
-            const handAwareStrategy = poseComparison.strategy;
+            console.log('🔍 Creating PoseComparison instance');
+            const poseComparison = new PoseComparison();
             
-            console.log('🔍 Strategy created:', !!handAwareStrategy);
-            console.log('🔍 calculateSimilarity method available:', typeof handAwareStrategy.calculateSimilarity === 'function');
+            console.log('🔍 PoseComparison created:', !!poseComparison);
+            console.log('🔍 calculateSimilarity method available:', typeof poseComparison.calculateSimilarity === 'function');
             
-            if (handAwareStrategy && typeof handAwareStrategy.calculateSimilarity === 'function') {
-                console.log('🔍 Calling handAwareStrategy.calculateSimilarity with:', {
+            if (poseComparison && typeof poseComparison.calculateSimilarity === 'function') {
+                console.log('🔍 Calling poseComparison.calculateSimilarity with:', {
                     targetResult: !!this.targetPhotoResult,
                     playerResult: !!playerPhotoResult,
                     handWeight,
                     excludedKeypoints
                 });
                 
-                const similarity = handAwareStrategy.calculateSimilarity(
+                const similarity = poseComparison.calculateSimilarity(
                     this.targetPhotoResult,
                     playerPhotoResult,
                     handWeight,
@@ -381,7 +380,7 @@ class TargetPoses {
                 console.log(`📊 Hand-aware pose similarity: ${similarity}% (hand weight: ${handWeight})`);
                 return similarity;
             } else {
-                console.log('🚫 handAwareStrategy or calculateSimilarity method not available');
+                console.log('🚫 poseComparison or calculateSimilarity method not available');
             }
         } else {
             console.log('🚫 PoseComparison not available globally');
