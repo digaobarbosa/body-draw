@@ -69,7 +69,7 @@ class MultiplayerManager {
                 state: 'waiting_start',
                 currentStage: 0,
                 poses: ['tpose', 'celebration', 'pointing'],
-                maxPlayers: 4,
+                maxPlayers: 100,
                 hostPlayerId: playerId,
                 startTime: null,
                 endTime: null
