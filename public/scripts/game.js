@@ -719,13 +719,8 @@ class PoseMatchingGame {
         const totalScore = validScores.reduce((sum, score) => sum + score, 0);
         
         // Create detailed results message
-        let resultsMessage = `🎉 All poses completed!\n\nTotal Score: ${Math.round(totalScore)}%\n\nIndividual Scores:\n`;
-        validScores.forEach((score, index) => {
-            if (index < this.poseQueue.length) {
-                const poseName = this.poseQueue[index];
-                resultsMessage += `${poseName}: ${Math.round(score)}%\n`;
-            }
-        });
+        let resultsMessage = `🎉 All poses completed!\n\nTotal Score: ${Math.round(totalScore)}%`;
+        
         resultsMessage += '\nClick "Start Game" to play again!';
         
         this.updateStatus(resultsMessage);
