@@ -18,44 +18,14 @@ class TargetPoses {
         // Try to load pre-calculated keypoints on initialization
         this.loadPreCalculatedKeypoints();
         
-        // Define available poses - all use 1.webp for now
-        this.poses = {
-            one: {
-                name: 'Stretching',
-                description: 'Stretch your arms up',
-                image: 'assets/targets/1preguica.jpg'
-            },
-            two: {
-                name: 'Man thinking',
-                description: 'Think about your life',
-                image: 'assets/targets/man-thinking.png'
-            },
-            three: {
-                name: 'Racoon woman working',
-                description: 'Work hard',
-                image: 'assets/targets/racoon-woman.png'
-            },
-            four: {
-                name: 'Usain Bolt',
-                description: 'Great run!',
-                image: 'assets/targets/usain-bolt.jpg'
-            },
-            old1: {
-                name: 'T-Pose',
-                description: 'Stand with arms extended horizontally',
-                image: 'assets/targets/1.webp'
-            },
-            old2: {
-                name: 'Arms Up',
-                description: 'Raise both arms up in celebration',
-                image: 'assets/targets/2.png'
-            },
-            old3: {
-                name: 'Pointing',
-                description: 'Point with one arm extended',
-                image: 'assets/targets/3.png'
-            }
-        };
+        // Use centralized pose configuration
+        if (typeof POSE_DEFINITIONS === 'undefined') {
+            console.error('poses-config.js must be loaded before poses.js');
+            // Fallback to empty object to prevent errors
+            this.poses = {};
+        } else {
+            this.poses = POSE_DEFINITIONS;
+        }
     }
 
     async loadPreCalculatedKeypoints() {

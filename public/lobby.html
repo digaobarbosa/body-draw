@@ -35,12 +35,7 @@
             </div>
 
             <div class="lobby-content">
-                <div class="players-section">
-                    <h3>Players (<span id="lobbyPlayerCount">1</span>)</h3>
-                    <div id="lobbyPlayersList" class="players-list">
-                        <!-- Players will be dynamically added here -->
-                    </div>
-                </div>
+               
 
                 <div class="waiting-section">
                     <div class="tips-section">
@@ -59,6 +54,13 @@
                         <div class="loading-spinner"></div>
                         <h3>Waiting for host to start the game...</h3>
                         <p>The game will begin automatically when the host starts it.</p>
+                    </div>
+                </div>
+
+                <div class="players-section">
+                    <h3>Players (<span id="lobbyPlayerCount">1</span>)</h3>
+                    <div id="lobbyPlayersList" class="players-list">
+                        <!-- Players will be dynamically added here -->
                     </div>
                 </div>
             </div>
@@ -85,6 +87,7 @@
     <!-- Scripts -->
     <script type="module" src="scripts/firebase-config.js"></script>
     <script src="scripts/multiplayer.js"></script>
+    <script src="scripts/poses-config.js"></script>
     <script src="scripts/lobby.js"></script>
 </body>
 </html>

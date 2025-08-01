@@ -32,8 +32,8 @@ class PoseMatchingGame {
         // Constant thickness value for API calls
         this.THICKNESS = 4;
 
-        // Define the sequence of poses to play through
-        this.poseQueue = this.isMultiplayer ? ['one', 'two', 'three', 'four'] : ['old1', 'old2', 'old3'];
+        // Use centralized pose configuration
+        this.poseQueue = POSE_QUEUES[this.isMultiplayer ? 'multiplayer' : 'singleplayer'];
 
         this.elements = {
             startButton: document.getElementById('startGame'),

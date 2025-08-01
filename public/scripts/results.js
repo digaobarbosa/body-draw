@@ -260,8 +260,14 @@ class ResultsController {
      * Display detailed pose-by-pose scores
      */
     displayDetailedScores(playerStatuses) {
-        // Define pose names (should match game.js poseQueue)
-        const poseNames = ['T-Pose', 'Arms Up', 'Pointing'];
+        // Determine game mode based on number of scores
+        const maxScores = Math.max(...playerStatuses.map(p => (p.scores || []).length));
+        const gameMode = maxScores === 4 ? 'multiplayer' : 'singleplayer';
+        
+        // Get poses for the detected game mode
+        const poses = getPosesForMode(gameMode);
+        const poseNames = poses.map(pose => pose.name);
+        
         const sortedPlayers = this.processPlayerData(playerStatuses);
 
         // Clear existing content and create detailed cards
@@ -296,10 +302,18 @@ class ResultsController {
         const poseScoresContainer = this.createElement('div', 'pose-scores');
         
         poseNames.forEach((poseName, index) => {
-            const score = player.scores[index] || 0;
+            const score = player.scores[index];
             const poseItem = this.createElement('div', 'pose-score-item');
             const poseNameDiv = this.createElement('div', 'pose-name', poseName);
-            const poseScoreDiv = this.createElement('div', 'pose-score', `${Math.round(score)}%`);
+            
+            // Handle missing scores gracefully
+            let poseScoreDiv;
+            if (score !== undefined && score !== null) {
+                poseScoreDiv = this.createElement('div', 'pose-score', `${Math.round(score)}%`);
+            } else {
+                poseScoreDiv = this.createElement('div', 'pose-score', 'N/A');
+                poseScoreDiv.style.opacity = '0.5';
+            }
             
             poseItem.appendChild(poseNameDiv);
             poseItem.appendChild(poseScoreDiv);
