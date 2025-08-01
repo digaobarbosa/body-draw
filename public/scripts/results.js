@@ -248,7 +248,7 @@ class ResultsController {
                 </div>
             </div>
             <div class="player-score">
-                <div class="total-score">${player.total}%</div>
+                <div class="total-score">${player.total}</div>
                 <div class="average-score">avg: ${player.average}%</div>
             </div>
         `;
