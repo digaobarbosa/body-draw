@@ -197,6 +197,15 @@ class HandAwareAngleStrategy extends PoseComparisonStrategy {
 
         let totalWeightedScore = 0;
         let totalWeight = 0;
+        
+        // Track individual component scores for logging
+        const componentScores = {
+            arms: [],
+            shoulderHips: [],
+            head: null,
+            shoulders: null,
+            body: []
+        };
 
         // 1. Wrist-Elbow-Shoulder angles (40% weight total, 20% each arm)
         const armAngles = [
@@ -244,7 +253,7 @@ class HandAwareAngleStrategy extends PoseComparisonStrategy {
                     playerObj.left_shoulder,
                     playerObj.left_hip
                 ),
-                weight: 0.2
+                weight: 0.05
             },
             {
                 name: 'right_shoulder_hip',
@@ -258,7 +267,7 @@ class HandAwareAngleStrategy extends PoseComparisonStrategy {
                     playerObj.right_shoulder,
                     playerObj.right_hip
                 ),
-                weight: 0.2
+                weight: 0.05
             }
         ];
 
@@ -273,9 +282,20 @@ class HandAwareAngleStrategy extends PoseComparisonStrategy {
         );
         
         if (headTiltTarget !== null && headTiltPlayer !== null) {
-            const headScore = this.angleToSimilarity(Math.abs(headTiltTarget - headTiltPlayer));
-            totalWeightedScore += headScore * 0.1;
+            const headAngleDiff = Math.abs(headTiltTarget - headTiltPlayer);
+            const headScore = this.angleToSimilarity(headAngleDiff);
+            const headWeightedScore = headScore * 0.1;
+            totalWeightedScore += headWeightedScore;
             totalWeight += 0.1;
+            
+            // Log head tilt details
+            componentScores.head = {
+                name: 'head_tilt',
+                angleDiff: ((headAngleDiff * 180) / Math.PI).toFixed(1),
+                score: (headScore * 100).toFixed(1),
+                weight: 0.1,
+                weightedContribution: (headWeightedScore * 100).toFixed(1)
+            };
         }
 
         // 3. Shoulder angle to horizontal (10% weight)
@@ -289,9 +309,20 @@ class HandAwareAngleStrategy extends PoseComparisonStrategy {
         );
 
         if (shoulderAngleTarget !== null && shoulderAnglePlayer !== null) {
-            const shoulderScore = this.angleToSimilarity(Math.abs(shoulderAngleTarget - shoulderAnglePlayer));
-            totalWeightedScore += shoulderScore * 0.1;
+            const shoulderAngleDiff = Math.abs(shoulderAngleTarget - shoulderAnglePlayer);
+            const shoulderScore = this.angleToSimilarity(shoulderAngleDiff);
+            const shoulderWeightedScore = shoulderScore * 0.1;
+            totalWeightedScore += shoulderWeightedScore;
             totalWeight += 0.1;
+            
+            // Log shoulder angle details
+            componentScores.shoulders = {
+                name: 'shoulder_angle',
+                angleDiff: ((shoulderAngleDiff * 180) / Math.PI).toFixed(1),
+                score: (shoulderScore * 100).toFixed(1),
+                weight: 0.1,
+                weightedContribution: (shoulderWeightedScore * 100).toFixed(1)
+            };
         }
 
         // 4. Shoulder to hip angles (10% weight total, 5% each side)
@@ -322,23 +353,128 @@ class HandAwareAngleStrategy extends PoseComparisonStrategy {
             }
         ];
 
-        // Process all angle comparisons
-        [...armAngles, ...shoulderHipAngles, ...bodyAngles].forEach(angleData => {
+        // Process arm angle comparisons
+        armAngles.forEach(angleData => {
             if (angleData.angle !== null && angleData.playerAngle !== null) {
                 let angleDiff = Math.abs(angleData.angle - angleData.playerAngle);
                 if (angleDiff > Math.PI) {
                     angleDiff = 2 * Math.PI - angleDiff;
                 }
                 const score = this.angleToSimilarity(angleDiff);
-                totalWeightedScore += score * angleData.weight;
+                const weightedScore = score * angleData.weight;
+                totalWeightedScore += weightedScore;
                 totalWeight += angleData.weight;
+                
+                // Log arm angle details
+                const angleDiffDegrees = (angleDiff * 180) / Math.PI;
+                componentScores.arms.push({
+                    name: angleData.name,
+                    angleDiff: angleDiffDegrees.toFixed(1),
+                    score: (score * 100).toFixed(1),
+                    weight: angleData.weight,
+                    weightedContribution: (weightedScore * 100).toFixed(1)
+                });
+            }
+        });
+
+        // Process shoulder-hip angle comparisons
+        shoulderHipAngles.forEach(angleData => {
+            if (angleData.angle !== null && angleData.playerAngle !== null) {
+                let angleDiff = Math.abs(angleData.angle - angleData.playerAngle);
+                if (angleDiff > Math.PI) {
+                    angleDiff = 2 * Math.PI - angleDiff;
+                }
+                const score = this.angleToSimilarity(angleDiff);
+                const weightedScore = score * angleData.weight;
+                totalWeightedScore += weightedScore;
+                totalWeight += angleData.weight;
+                
+                // Log shoulder-hip angle details
+                const angleDiffDegrees = (angleDiff * 180) / Math.PI;
+                componentScores.shoulderHips.push({
+                    name: angleData.name,
+                    angleDiff: angleDiffDegrees.toFixed(1),
+                    score: (score * 100).toFixed(1),
+                    weight: angleData.weight,
+                    weightedContribution: (weightedScore * 100).toFixed(1)
+                });
+            }
+        });
+
+        // Process body angle comparisons
+        bodyAngles.forEach(angleData => {
+            if (angleData.angle !== null && angleData.playerAngle !== null) {
+                let angleDiff = Math.abs(angleData.angle - angleData.playerAngle);
+                if (angleDiff > Math.PI) {
+                    angleDiff = 2 * Math.PI - angleDiff;
+                }
+                const score = this.angleToSimilarity(angleDiff);
+                const weightedScore = score * angleData.weight;
+                totalWeightedScore += weightedScore;
+                totalWeight += angleData.weight;
+                
+                // Log body angle details
+                const angleDiffDegrees = (angleDiff * 180) / Math.PI;
+                componentScores.body.push({
+                    name: angleData.name,
+                    angleDiff: angleDiffDegrees.toFixed(1),
+                    score: (score * 100).toFixed(1),
+                    weight: angleData.weight,
+                    weightedContribution: (weightedScore * 100).toFixed(1)
+                });
             }
         });
 
         if (totalWeight === 0) return 0;
 
         // Normalize to percentage
-        return (totalWeightedScore / totalWeight) * 100;
+        const finalScore = (totalWeightedScore / totalWeight) * 100;
+        
+        // Log comprehensive pose comparison summary
+        console.log('🎯 Pose Comparison Breakdown:');
+        console.log('================================');
+        
+        // Log arm angles
+        if (componentScores.arms.length > 0) {
+            console.log('💪 ARM ANGLES (40% total weight):');
+            componentScores.arms.forEach(arm => {
+                console.log(`  ${arm.name}: ${arm.angleDiff}° diff → ${arm.score}% (weight: ${arm.weight}, contribution: ${arm.weightedContribution}%)`);
+            });
+        }
+        
+        // Log shoulder-hip angles
+        if (componentScores.shoulderHips.length > 0) {
+            console.log('🦴 SHOULDER-HIP ANGLES (40% total weight):');
+            componentScores.shoulderHips.forEach(sh => {
+                console.log(`  ${sh.name}: ${sh.angleDiff}° diff → ${sh.score}% (weight: ${sh.weight}, contribution: ${sh.weightedContribution}%)`);
+            });
+        }
+        
+        // Log head tilt
+        if (componentScores.head) {
+            console.log('👤 HEAD TILT (10% weight):');
+            console.log(`  ${componentScores.head.name}: ${componentScores.head.angleDiff}° diff → ${componentScores.head.score}% (contribution: ${componentScores.head.weightedContribution}%)`);
+        }
+        
+        // Log shoulder angle
+        if (componentScores.shoulders) {
+            console.log('🤷 SHOULDER ANGLE (10% weight):');
+            console.log(`  ${componentScores.shoulders.name}: ${componentScores.shoulders.angleDiff}° diff → ${componentScores.shoulders.score}% (contribution: ${componentScores.shoulders.weightedContribution}%)`);
+        }
+        
+        // Log body angles
+        if (componentScores.body.length > 0) {
+            console.log('🧍 BODY ANGLES (10% total weight):');
+            componentScores.body.forEach(body => {
+                console.log(`  ${body.name}: ${body.angleDiff}° diff → ${body.score}% (weight: ${body.weight}, contribution: ${body.weightedContribution}%)`);
+            });
+        }
+        
+        console.log('================================');
+        console.log(`📊 FINAL SCORE: ${finalScore.toFixed(1)}% (total weight used: ${totalWeight.toFixed(2)})`);
+        console.log('================================\n');
+        
+        return finalScore;
     }
 
     /**
@@ -352,16 +488,11 @@ class HandAwareAngleStrategy extends PoseComparisonStrategy {
         // Define discrete score thresholds (π/12 = 15 degrees)
         const discreteScores = [
             { threshold: 0, score: 1.0 },      // 0-15 degrees: 100%
-            { threshold: 15, score: 0.9 },     // 15-30 degrees: 90%
-            { threshold: 30, score: 0.8 },     // 30-45 degrees: 80%
-            { threshold: 45, score: 0.7 },     // 45-60 degrees: 70%
-            { threshold: 60, score: 0.6 },     // 60-75 degrees: 60%
-            { threshold: 75, score: 0.5 },     // 75-90 degrees: 50%
-            { threshold: 90, score: 0.4 },     // 90-105 degrees: 40%
-            { threshold: 105, score: 0.3 },    // 105-120 degrees: 30%
-            { threshold: 120, score: 0.2 },    // 120-135 degrees: 20%
-            { threshold: 135, score: 0.1 },    // 135-150 degrees: 10%
-            { threshold: 150, score: 0.0 }     // 150+ degrees: 0%
+            { threshold: 15, score: 0.8 },     // 15-30 degrees: 90%
+            { threshold: 30, score: 0.6 },     // 30-45 degrees: 80%
+            { threshold: 45, score: 0.3 },     // 45-60 degrees: 70%
+            { threshold: 60, score: 0.1 },     // 60-75 degrees: 60%
+            { threshold: 75, score: 0 },     // 75-90 degrees: 50%     // 150+ degrees: 0%
         ];
         
         // Find the appropriate score based on angle difference
