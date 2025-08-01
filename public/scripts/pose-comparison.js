@@ -1,6 +1,11 @@
 /**
  * Pose Comparison Strategies
  * Hand-aware pose matching algorithm using keypoints and hand detection
+ * 
+ * Updated with:
+ * - Discrete angle scoring: Each π/12 (15 degrees) difference has a fixed score
+ * - Added shoulder-hip-elbow angle measurement with same weight as arm angles
+ * - Rebalanced weights: Arms (40%), Shoulder-Hip (40%), Head (10%), Body (10%)
  */
 
 // Base strategy interface
@@ -193,7 +198,7 @@ class HandAwareAngleStrategy extends PoseComparisonStrategy {
         let totalWeightedScore = 0;
         let totalWeight = 0;
 
-        // 1. Wrist-Elbow-Shoulder angles (30% weight total, 15% each arm)
+        // 1. Wrist-Elbow-Shoulder angles (40% weight total, 20% each arm)
         const armAngles = [
             { 
                 name: 'left_arm',
@@ -225,7 +230,39 @@ class HandAwareAngleStrategy extends PoseComparisonStrategy {
             }
         ];
 
-        // 2. Head tilt angle (20% weight)
+        // 2. Elbow-Shoulder-Hip angles (40% weight total, 20% each side)
+        const shoulderHipAngles = [
+            {
+                name: 'left_shoulder_hip',
+                angle: this.calculateAngle(
+                    targetObj.left_elbow,
+                    targetObj.left_shoulder,
+                    targetObj.left_hip
+                ),
+                playerAngle: this.calculateAngle(
+                    playerObj.left_elbow,
+                    playerObj.left_shoulder,
+                    playerObj.left_hip
+                ),
+                weight: 0.2
+            },
+            {
+                name: 'right_shoulder_hip',
+                angle: this.calculateAngle(
+                    targetObj.right_elbow,
+                    targetObj.right_shoulder,
+                    targetObj.right_hip
+                ),
+                playerAngle: this.calculateAngle(
+                    playerObj.right_elbow,
+                    playerObj.right_shoulder,
+                    playerObj.right_hip
+                ),
+                weight: 0.2
+            }
+        ];
+
+        // 2. Head tilt angle (10% weight)
         const headTiltTarget = this.calculateHorizontalAngle(
             targetObj.left_eye,
             targetObj.right_eye
@@ -237,7 +274,7 @@ class HandAwareAngleStrategy extends PoseComparisonStrategy {
         
         if (headTiltTarget !== null && headTiltPlayer !== null) {
             const headScore = this.angleToSimilarity(Math.abs(headTiltTarget - headTiltPlayer));
-            totalWeightedScore += headScore * 0.2;
+            totalWeightedScore += headScore * 0.1;
             totalWeight += 0.1;
         }
 
@@ -257,7 +294,7 @@ class HandAwareAngleStrategy extends PoseComparisonStrategy {
             totalWeight += 0.1;
         }
 
-        // 4. Shoulder to hip angles (20% weight total, 10% each side)
+        // 4. Shoulder to hip angles (10% weight total, 5% each side)
         const bodyAngles = [
             {
                 name: 'right_body',
@@ -269,7 +306,7 @@ class HandAwareAngleStrategy extends PoseComparisonStrategy {
                     playerObj.right_shoulder,
                     playerObj.right_hip
                 ),
-                weight: 0.07
+                weight: 0.05
             },
             {
                 name: 'left_body',
@@ -281,12 +318,12 @@ class HandAwareAngleStrategy extends PoseComparisonStrategy {
                     playerObj.left_shoulder,
                     playerObj.left_hip
                 ),
-                weight: 0.07
+                weight: 0.05
             }
         ];
 
         // Process all angle comparisons
-        [...armAngles, ...bodyAngles].forEach(angleData => {
+        [...armAngles, ...shoulderHipAngles, ...bodyAngles].forEach(angleData => {
             if (angleData.angle !== null && angleData.playerAngle !== null) {
                 let angleDiff = Math.abs(angleData.angle - angleData.playerAngle);
                 if (angleDiff > Math.PI) {
@@ -305,14 +342,36 @@ class HandAwareAngleStrategy extends PoseComparisonStrategy {
     }
 
     /**
-     * Convert angle difference to similarity score
+     * Convert angle difference to similarity score using discrete strategy
+     * Each π/12 (15 degrees) difference has a fixed score
      */
     angleToSimilarity(angleDiff) {
-        // Normalize angle difference to 0-1 range
-        const normalizedDiff = angleDiff / Math.PI;
-        // Apply exponential penalty for larger differences
-        const exponentialPenalty = Math.pow(normalizedDiff, 0.7);
-        return Math.max(0, 1 - exponentialPenalty);
+        // Convert angle difference to degrees
+        const angleDiffDegrees = (angleDiff * 180) / Math.PI;
+        
+        // Define discrete score thresholds (π/12 = 15 degrees)
+        const discreteScores = [
+            { threshold: 0, score: 1.0 },      // 0-15 degrees: 100%
+            { threshold: 15, score: 0.9 },     // 15-30 degrees: 90%
+            { threshold: 30, score: 0.8 },     // 30-45 degrees: 80%
+            { threshold: 45, score: 0.7 },     // 45-60 degrees: 70%
+            { threshold: 60, score: 0.6 },     // 60-75 degrees: 60%
+            { threshold: 75, score: 0.5 },     // 75-90 degrees: 50%
+            { threshold: 90, score: 0.4 },     // 90-105 degrees: 40%
+            { threshold: 105, score: 0.3 },    // 105-120 degrees: 30%
+            { threshold: 120, score: 0.2 },    // 120-135 degrees: 20%
+            { threshold: 135, score: 0.1 },    // 135-150 degrees: 10%
+            { threshold: 150, score: 0.0 }     // 150+ degrees: 0%
+        ];
+        
+        // Find the appropriate score based on angle difference
+        for (let i = discreteScores.length - 1; i >= 0; i--) {
+            if (angleDiffDegrees >= discreteScores[i].threshold) {
+                return discreteScores[i].score;
+            }
+        }
+        
+        return 0.0; // Fallback for very large differences
     }
 
     /**
