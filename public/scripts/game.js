@@ -30,7 +30,7 @@ class PoseMatchingGame {
         };
 
         // Constant thickness value for API calls
-        this.THICKNESS = 10;
+        this.THICKNESS = 4;
 
         // Define the sequence of poses to play through
         this.poseQueue = this.isMultiplayer ? ['one', 'two', 'three', 'four'] : ['old1', 'old2', 'old3'];
@@ -429,7 +429,7 @@ class PoseMatchingGame {
         // Switch to live video view for the matching phase
         this.poses.clearVisualization();
         
-        this.updateStatus('Strike your pose! Hold it for 7 seconds.');
+        this.updateStatus('Strike your pose! Hold it for 5 seconds.');
         
         // Hide accuracy during matching phase
         this.gameState.currentAccuracy = 0;

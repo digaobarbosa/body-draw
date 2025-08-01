@@ -202,6 +202,7 @@ class HandAwareAngleStrategy extends PoseComparisonStrategy {
         const componentScores = {
             arms: [],
             shoulderHips: [],
+            armVerticals: [],
             head: null,
             shoulders: null,
             body: []
@@ -271,7 +272,36 @@ class HandAwareAngleStrategy extends PoseComparisonStrategy {
             }
         ];
 
-        // 2. Head tilt angle (10% weight)
+        // 3. Arm Vertical Angles (40% weight total, 20% each side)
+        // These measure arm orientation relative to horizontal (up/down/forward)
+        const armVerticalAngles = [
+            {
+                name: 'left_arm_vertical',
+                angle: this.calculateHorizontalAngle(
+                    targetObj.left_shoulder,
+                    targetObj.left_elbow
+                ),
+                playerAngle: this.calculateHorizontalAngle(
+                    playerObj.left_shoulder,
+                    playerObj.left_elbow
+                ),
+                weight: 0.2
+            },
+            {
+                name: 'right_arm_vertical',
+                angle: this.calculateHorizontalAngle(
+                    targetObj.right_shoulder,
+                    targetObj.right_elbow
+                ),
+                playerAngle: this.calculateHorizontalAngle(
+                    playerObj.right_shoulder,
+                    playerObj.right_elbow
+                ),
+                weight: 0.2
+            }
+        ];
+
+        // 4. Head tilt angle (10% weight)
         const headTiltTarget = this.calculateHorizontalAngle(
             targetObj.left_eye,
             targetObj.right_eye
@@ -401,6 +431,30 @@ class HandAwareAngleStrategy extends PoseComparisonStrategy {
             }
         });
 
+        // Process arm vertical angle comparisons
+        armVerticalAngles.forEach(angleData => {
+            if (angleData.angle !== null && angleData.playerAngle !== null) {
+                let angleDiff = Math.abs(angleData.angle - angleData.playerAngle);
+                if (angleDiff > Math.PI) {
+                    angleDiff = 2 * Math.PI - angleDiff;
+                }
+                const score = this.angleToSimilarity(angleDiff);
+                const weightedScore = score * angleData.weight;
+                totalWeightedScore += weightedScore;
+                totalWeight += angleData.weight;
+                
+                // Log arm vertical angle details
+                const angleDiffDegrees = (angleDiff * 180) / Math.PI;
+                componentScores.armVerticals.push({
+                    name: angleData.name,
+                    angleDiff: angleDiffDegrees.toFixed(1),
+                    score: (score * 100).toFixed(1),
+                    weight: angleData.weight,
+                    weightedContribution: (weightedScore * 100).toFixed(1)
+                });
+            }
+        });
+
         // Process body angle comparisons
         bodyAngles.forEach(angleData => {
             if (angleData.angle !== null && angleData.playerAngle !== null) {
@@ -447,6 +501,14 @@ class HandAwareAngleStrategy extends PoseComparisonStrategy {
             console.log('🦴 SHOULDER-HIP ANGLES (40% total weight):');
             componentScores.shoulderHips.forEach(sh => {
                 console.log(`  ${sh.name}: ${sh.angleDiff}° diff → ${sh.score}% (weight: ${sh.weight}, contribution: ${sh.weightedContribution}%)`);
+            });
+        }
+        
+        // Log arm vertical angles
+        if (componentScores.armVerticals.length > 0) {
+            console.log('📐 ARM VERTICAL ANGLES (40% total weight):');
+            componentScores.armVerticals.forEach(av => {
+                console.log(`  ${av.name}: ${av.angleDiff}° diff → ${av.score}% (weight: ${av.weight}, contribution: ${av.weightedContribution}%)`);
             });
         }
         
