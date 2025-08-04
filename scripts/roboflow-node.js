@@ -1,7 +1,7 @@
 class RoboflowAPINode {
     constructor() {
         // For Node.js, we'll call the Roboflow API directly
-        this.apiKey = process.env.ROBOFLOW_API_KEY || "SLt1HjDiKA4nAQcHml4K";
+        this.apiKey = process.env.ROBOFLOW_API_KEY;
         this.baseUrl = "https://serverless.roboflow.com/infer/workflows/rodrigo-xn5xn/keypoints-test-2";
         this.cache = new Map();
         this.cacheTimeout = 15 * 60 * 1000; // 15 minutes

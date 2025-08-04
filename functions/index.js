@@ -15,7 +15,7 @@ exports.detectPose = onRequest({
 
   try {
     // Get the Roboflow API key from environment or hardcoded for now
-    const apiKey = process.env.ROBOFLOW_API_KEY || "SLt1HjDiKA4nAQcHml4K";
+    const apiKey = process.env.ROBOFLOW_API_KEY;
     if (!apiKey) {
       logger.error("ROBOFLOW_API_KEY not available");
       res.status(500).json({error: "Server configuration error"});
