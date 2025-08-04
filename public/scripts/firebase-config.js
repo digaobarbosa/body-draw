@@ -1,11 +1,11 @@
 // Firebase configuration - You'll need to replace this with your actual config
 const firebaseConfig = {
-  apiKey: "AIzaSyAc4c6h7-Re8i35P_vyxYUW7AiBBFLvQOQ",
+  apiKey: "",
   authDomain: "body-draw.firebaseapp.com",
-  projectId: "body-draw",
-  storageBucket: "body-draw.firebasestorage.app",
+  projectId: "",
+  storageBucket: "",
   messagingSenderId: "558871081893",
-  appId: "1:558871081893:web:5ca2ac972414c0fe4eae4c"
+  appId: ""
 };
 
 // Initialize Firebase
